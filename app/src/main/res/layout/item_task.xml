@@ -1,0 +1,177 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.cardview.widget.CardView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/cardTask"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_margin="8dp"
+    app:cardElevation="2dp"
+    app:cardCornerRadius="8dp">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="16dp">
+
+        <!-- Task Title -->
+        <TextView
+            android:id="@+id/tvTaskTitle"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Task Title"
+            android:textSize="16sp"
+            android:textStyle="bold"
+            android:textColor="#333333" />
+
+        <!-- Task Description -->
+        <TextView
+            android:id="@+id/tvTaskDescription"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Task description"
+            android:textSize="14sp"
+            android:textColor="#666666"
+            android:layout_marginTop="4dp"
+            android:maxLines="2"
+            android:ellipsize="end" />
+
+        <!-- Task Info Row -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:layout_marginTop="12dp"
+            android:gravity="center_vertical">
+
+            <!-- Status Badge -->
+            <TextView
+                android:id="@+id/tvTaskStatus"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="TODO"
+                android:textSize="12sp"
+                android:textColor="#FFFFFF"
+                android:background="@drawable/bg_status_todo"
+                android:paddingStart="8dp"
+                android:paddingEnd="8dp"
+                android:paddingTop="4dp"
+                android:paddingBottom="4dp" />
+
+            <View
+                android:layout_width="0dp"
+                android:layout_height="0dp"
+                android:layout_weight="1" />
+
+            <!-- Assignee Count -->
+            <TextView
+                android:id="@+id/tvAssigneeCount"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="0 người"
+                android:textSize="12sp"
+                android:textColor="#666666"
+                android:drawableLeft="@android:drawable/ic_menu_my_calendar"
+                android:drawableTint="#666666"
+                android:drawablePadding="4dp" />
+
+            <!-- Due Date -->
+            <TextView
+                android:id="@+id/tvDueDate"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="01/01/2024"
+                android:textSize="12sp"
+                android:textColor="#666666"
+                android:layout_marginStart="12dp"
+                android:drawableLeft="@android:drawable/ic_menu_recent_history"
+                android:drawableTint="#666666"
+                android:drawablePadding="4dp"
+                android:visibility="gone" />
+
+            <!-- Expand/Collapse Icon -->
+            <ImageView
+                android:id="@+id/ivExpandCollapse"
+                android:layout_width="24dp"
+                android:layout_height="24dp"
+                android:layout_marginStart="8dp"
+                android:src="@android:drawable/arrow_down_float"
+                android:contentDescription="Expand" />
+
+        </LinearLayout>
+
+        <!-- Expandable Section -->
+        <LinearLayout
+            android:id="@+id/layoutExpandable"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:visibility="gone"
+            android:layout_marginTop="16dp">
+
+            <!-- Divider -->
+            <View
+                android:layout_width="match_parent"
+                android:layout_height="1dp"
+                android:background="#E0E0E0"
+                android:layout_marginBottom="12dp" />
+
+            <!-- Assignees Header -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:layout_marginBottom="8dp">
+
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="Người tham gia"
+                    android:textSize="14sp"
+                    android:textStyle="bold"
+                    android:textColor="#333333" />
+
+                <Button
+                    android:id="@+id/btnAddAssignee"
+                    android:layout_width="wrap_content"
+                    android:layout_height="32dp"
+                    android:text="+ Thêm"
+                    android:textSize="12sp"
+                    android:textColor="#FFFFFF"
+                    android:backgroundTint="#4CAF50"
+                    android:minWidth="0dp"
+                    android:paddingStart="12dp"
+                    android:paddingEnd="12dp" />
+
+            </LinearLayout>
+
+            <!-- Assignees List -->
+            <LinearLayout
+                android:id="@+id/layoutAssignees"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical">
+
+                <!-- Dynamic assignees will be added here -->
+
+            </LinearLayout>
+
+            <!-- Empty State -->
+            <TextView
+                android:id="@+id/tvNoAssignees"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Chưa có người tham gia"
+                android:textSize="14sp"
+                android:textColor="#999999"
+                android:textAlignment="center"
+                android:padding="16dp"
+                android:visibility="gone" />
+
+        </LinearLayout>
+
+    </LinearLayout>
+
+</androidx.cardview.widget.CardView>

@@ -2,6 +2,8 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools">
 
+    <uses-permission android:name="android.permission.INTERNET" />
+
     <application
         android:allowBackup="true"
         android:dataExtractionRules="@xml/data_extraction_rules"
@@ -12,20 +14,34 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.MyApplicationDemo">
         <activity
-            android:name=".RecyclerViewActivity"
-            android:exported="false" />
+            android:name=".CreateTaskActivity"
+            android:exported="false"
+            android:label="Tạo Task" />
         <activity
-            android:name=".ListViewActivity"
-            android:exported="false" />
+            android:name=".ProjectDetailActivity"
+            android:exported="false"
+            android:label="Chi Tiết Dự Án" />
+        <activity
+            android:name=".MyProjectsActivity"
+            android:exported="false"
+            android:label="Dự Án Của Tôi" />
+        <activity
+            android:name=".ProjectListActivity"
+            android:exported="false"
+            android:label="Danh Sách Dự Án" />
+        <activity
+            android:name=".CreateProjectActivity"
+            android:exported="false"
+            android:label="Tạo Dự Án" />
         <activity
             android:name=".HomeActivity"
             android:exported="false" />
         <activity
-            android:name=".RegisterActivity"
-            android:exported="true"
+            android:name=".auth.RegisterActivity"
+            android:exported="false"
             android:theme="@style/Theme.MyApplicationDemo" />
         <activity
-            android:name=".MainActivity"
+            android:name=".auth.LoginActivity"
             android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
