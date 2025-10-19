@@ -18,6 +18,11 @@
             android:name=".HomeActivity"
             android:exported="false" />
 
+        <!-- Create Project Activity - Màn hình tạo project mới -->
+        <activity
+            android:name=".CreateProjectActivity"
+            android:exported="false" />
+
         <!-- Register Activity - Màn hình đăng ký -->
         <activity
             android:name=".auth.RegisterActivity"

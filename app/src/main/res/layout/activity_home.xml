@@ -27,6 +27,18 @@
         android:textColor="#666666"
         android:layout_marginBottom="48dp" />
 
+    <!-- Nút Tạo Project Mới -->
+    <Button
+        android:id="@+id/btnCreateProject"
+        android:layout_width="match_parent"
+        android:layout_height="56dp"
+        android:text="➕ Tạo Project Mới"
+        android:textSize="16sp"
+        android:textStyle="bold"
+        android:backgroundTint="#4CAF50"
+        android:textColor="#FFFFFF"
+        android:layout_marginBottom="16dp" />
+
     <Button
         android:id="@+id/btnLogout"
         android:layout_width="match_parent"
@@ -38,4 +50,3 @@
         android:textColor="#FFFFFF" />
 
 </LinearLayout>
-

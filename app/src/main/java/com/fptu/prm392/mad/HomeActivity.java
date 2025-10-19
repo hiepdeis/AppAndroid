@@ -16,7 +16,7 @@ public class HomeActivity extends AppCompatActivity {
 
     private FirebaseAuth mAuth;
     private TextView tvWelcome;
-    private Button btnLogout;
+    private Button btnLogout, btnCreateProject;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -27,6 +27,7 @@ public class HomeActivity extends AppCompatActivity {
 
         tvWelcome = findViewById(R.id.tvWelcome);
         btnLogout = findViewById(R.id.btnLogout);
+        btnCreateProject = findViewById(R.id.btnCreateProject);
 
         // Lấy thông tin user hiện tại
         FirebaseUser currentUser = mAuth.getCurrentUser();
@@ -47,6 +48,16 @@ public class HomeActivity extends AppCompatActivity {
                 navigateToLogin();
             }
         });
+
+        // Xử lý tạo dự án mới
+        btnCreateProject.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                // Chuyển sang màn hình tạo project
+                Intent intent = new Intent(HomeActivity.this, CreateProjectActivity.class);
+                startActivity(intent);
+            }
+        });
     }
 
     private void navigateToLogin() {
@@ -56,4 +67,3 @@ public class HomeActivity extends AppCompatActivity {
         finish();
     }
 }
-
