@@ -12,24 +12,14 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.MyApplicationDemo">
         <activity
-            android:name=".RecyclerViewActivity"
+            android:name=".ProjectMembersActivity"
             android:exported="false" />
-        <activity
-            android:name=".ListViewActivity"
-            android:exported="false" />
+
         <activity
             android:name=".HomeActivity"
-            android:exported="false" />
-        <activity
-            android:name=".RegisterActivity"
-            android:exported="true"
-            android:theme="@style/Theme.MyApplicationDemo" />
-        <activity
-            android:name=".MainActivity"
             android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
-
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
