@@ -1,31 +1,39 @@
 package com.fptu.prm392.mad.models;
 
 import com.google.firebase.firestore.ServerTimestamp;
+import java.util.ArrayList;
 import java.util.Date;
+import java.util.List;
 
 public class Project {
     private String projectId;
     private String name;
     private String description;
     private String createdBy;       // userId của người tạo
+    private String createdByName;   // Tên người tạo (denormalized)
     @ServerTimestamp
     private Date createdAt;
     private int memberCount;        // Số lượng members
     private int taskCount;          // Số lượng tasks
+    private List<String> memberIds; // Danh sách userId của members - để query dễ dàng
 
     // Constructor mặc định
     public Project() {
+        this.memberIds = new ArrayList<>();
     }
 
     // Constructor
-    public Project(String projectId, String name, String description, String createdBy) {
+    public Project(String projectId, String name, String description, String createdBy, String createdByName) {
         this.projectId = projectId;
         this.name = name;
         this.description = description;
         this.createdBy = createdBy;
+        this.createdByName = createdByName;
         this.createdAt = new Date();
         this.memberCount = 1; // Creator là member đầu tiên
         this.taskCount = 0;
+        this.memberIds = new ArrayList<>();
+        this.memberIds.add(createdBy); // Thêm creator vào memberIds
     }
 
     // Getters và Setters
@@ -61,6 +69,14 @@ public class Project {
         this.createdBy = createdBy;
     }
 
+    public String getCreatedByName() {
+        return createdByName;
+    }
+
+    public void setCreatedByName(String createdByName) {
+        this.createdByName = createdByName;
+    }
+
     public Date getCreatedAt() {
         return createdAt;
     }
@@ -83,5 +99,13 @@ public class Project {
 
     public void setTaskCount(int taskCount) {
         this.taskCount = taskCount;
+    }
+
+    public List<String> getMemberIds() {
+        return memberIds;
+    }
+
+    public void setMemberIds(List<String> memberIds) {
+        this.memberIds = memberIds;
     }
 }
