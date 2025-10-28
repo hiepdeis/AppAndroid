@@ -34,7 +34,7 @@ public class LoginActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         EdgeToEdge.enable(this);
-        setContentView(R.layout.activity_login);
+        setContentView(R.layout.login);
 
         // Khởi tạo Firebase Auth
         mAuth = FirebaseAuth.getInstance();
@@ -82,16 +82,19 @@ public class LoginActivity extends AppCompatActivity {
         // Kiểm tra dữ liệu nhập vào
         if (TextUtils.isEmpty(email)) {
             etEmail.setError("Vui lòng nhập email");
+            etEmail.requestFocus();
             return;
         }
 
         if (TextUtils.isEmpty(password)) {
             etPassword.setError("Vui lòng nhập mật khẩu");
+            etEmail.requestFocus();
             return;
         }
 
         if (password.length() < 6) {
             etPassword.setError("Mật khẩu phải có ít nhất 6 ký tự");
+            etPassword.requestFocus();
             return;
         }
 

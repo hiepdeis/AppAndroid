@@ -43,6 +43,8 @@
             android:name=".auth.RegisterActivity"
             android:exported="false"
             android:theme="@style/Theme.MyApplicationDemo" />
+
+        // file bắt đầu ứng dụng
         <activity
             android:name=".auth.LoginActivity"
             android:exported="true">
