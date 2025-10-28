@@ -3,14 +3,14 @@ package com.fptu.prm392.mad.repositories;
 import android.util.Log;
 
 import com.fptu.prm392.mad.models.Project;
-import com.fptu.prm392.mad.models.ProjectMember;
 import com.google.android.gms.tasks.OnFailureListener;
 import com.google.android.gms.tasks.OnSuccessListener;
-import com.google.firebase.Timestamp;
+import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.firestore.DocumentReference;
 import com.google.firebase.firestore.DocumentSnapshot;
-import com.google.firebase.firestore.FieldValue;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.Query;
+import com.google.firebase.firestore.QuerySnapshot;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -20,35 +20,36 @@ import java.util.Map;
 public class ProjectRepository {
     private static final String TAG = "ProjectRepository";
     private static final String COLLECTION_PROJECTS = "projects";
-    private static final String SUBCOLLECTION_MEMBERS = "members";
 
     private final FirebaseFirestore db;
+    private final FirebaseAuth auth;
 
     public ProjectRepository() {
+        // Kết nối Firestore tự động khi khởi tạo
         this.db = FirebaseFirestore.getInstance();
+        this.auth = FirebaseAuth.getInstance();
     }
 
     // CREATE: Tạo project mới
-    public void createProject(Project project, ProjectMember creator,
-                             OnSuccessListener<String> onSuccess, OnFailureListener onFailure) {
-        // Tạo project document
-        db.collection(COLLECTION_PROJECTS)
-            .add(project)
-            .addOnSuccessListener(documentReference -> {
-                String projectId = documentReference.getId();
-                project.setProjectId(projectId);
+    public void createProject(String name, String description,
+                             OnSuccessListener<String> onSuccess,
+                             OnFailureListener onFailure) {
 
-                // Thêm creator vào members
-                db.collection(COLLECTION_PROJECTS)
-                    .document(projectId)
-                    .collection(SUBCOLLECTION_MEMBERS)
-                    .document(creator.getUserId())
-                    .set(creator)
-                    .addOnSuccessListener(aVoid -> {
-                        Log.d(TAG, "Project created: " + projectId);
-                        onSuccess.onSuccess(projectId);
-                    })
-                    .addOnFailureListener(onFailure);
+        String currentUserId = auth.getCurrentUser().getUid();
+        String currentUserName = auth.getCurrentUser().getDisplayName();
+
+        // Tạo document reference với ID tự động
+        DocumentReference docRef = db.collection(COLLECTION_PROJECTS).document();
+        String projectId = docRef.getId();
+
+        // Tạo object Project
+        Project project = new Project(projectId, name, description, currentUserId, currentUserName);
+
+        // Lưu vào Firestore
+        docRef.set(project)
+            .addOnSuccessListener(aVoid -> {
+                Log.d(TAG, "Project created successfully: " + projectId);
+                onSuccess.onSuccess(projectId); // Trả về projectId vừa tạo
             })
             .addOnFailureListener(e -> {
                 Log.e(TAG, "Error creating project", e);
@@ -57,7 +58,8 @@ public class ProjectRepository {
     }
 
     // READ: Lấy project theo ID
-    public void getProjectById(String projectId, OnSuccessListener<Project> onSuccess,
+    public void getProjectById(String projectId,
+                              OnSuccessListener<Project> onSuccess,
                               OnFailureListener onFailure) {
         db.collection(COLLECTION_PROJECTS)
             .document(projectId)
@@ -66,35 +68,36 @@ public class ProjectRepository {
                 if (documentSnapshot.exists()) {
                     Project project = documentSnapshot.toObject(Project.class);
                     if (project != null) {
-                        project.setProjectId(documentSnapshot.getId());
+                        Log.d(TAG, "Project found: " + project.getName());
                         onSuccess.onSuccess(project);
                     } else {
                         onFailure.onFailure(new Exception("Project data is null"));
                     }
                 } else {
+                    Log.d(TAG, "Project not found: " + projectId);
                     onFailure.onFailure(new Exception("Project not found"));
                 }
             })
-            .addOnFailureListener(onFailure);
+            .addOnFailureListener(e -> {
+                Log.e(TAG, "Error getting project", e);
+                onFailure.onFailure(e);
+            });
     }
 
-    // READ: Lấy tất cả projects của user
-    public void getProjectsByUser(String userId, OnSuccessListener<List<Project>> onSuccess,
-                                  OnFailureListener onFailure) {
-        // Thay vì dùng collectionGroup (cần index), ta sẽ query trực tiếp getAllProjects
-        // rồi filter ở client side (tạm thời cho đơn giản)
-        // Hoặc có thể lưu array projectIds trong user document
+    // READ: Lấy tất cả projects của user hiện tại
+    public void getMyProjects(OnSuccessListener<List<Project>> onSuccess,
+                             OnFailureListener onFailure) {
+        String currentUserId = auth.getCurrentUser().getUid();
 
         db.collection(COLLECTION_PROJECTS)
-            .whereArrayContains("memberIds", userId) // Cần thêm field này vào Project model
+            .whereArrayContains("memberIds", currentUserId) // Query theo memberIds
             .orderBy("createdAt", Query.Direction.DESCENDING)
             .get()
-            .addOnSuccessListener(querySnapshot -> {
+            .addOnSuccessListener(queryDocumentSnapshots -> {
                 List<Project> projects = new ArrayList<>();
-                for (DocumentSnapshot doc : querySnapshot) {
+                for (DocumentSnapshot doc : queryDocumentSnapshots) {
                     Project project = doc.toObject(Project.class);
                     if (project != null) {
-                        project.setProjectId(doc.getId());
                         projects.add(project);
                     }
                 }
@@ -102,167 +105,152 @@ public class ProjectRepository {
                 onSuccess.onSuccess(projects);
             })
             .addOnFailureListener(e -> {
-                Log.e(TAG, "Error getting user projects", e);
-                // Fallback: Lấy tất cả projects (temporary solution)
-                getAllProjects(onSuccess, onFailure);
+                Log.e(TAG, "Error getting projects", e);
+                onFailure.onFailure(e);
             });
     }
 
-    // READ: Lấy TẤT CẢ projects trong database
-    public void getAllProjects(OnSuccessListener<List<Project>> onSuccess,
-                              OnFailureListener onFailure) {
+    // READ: Lấy projects do user tạo
+    public void getProjectsCreatedByMe(OnSuccessListener<List<Project>> onSuccess,
+                                      OnFailureListener onFailure) {
+        String currentUserId = auth.getCurrentUser().getUid();
+
         db.collection(COLLECTION_PROJECTS)
+            .whereEqualTo("createdBy", currentUserId)
             .orderBy("createdAt", Query.Direction.DESCENDING)
             .get()
-            .addOnSuccessListener(querySnapshot -> {
+            .addOnSuccessListener(queryDocumentSnapshots -> {
                 List<Project> projects = new ArrayList<>();
-                for (DocumentSnapshot doc : querySnapshot) {
+                for (DocumentSnapshot doc : queryDocumentSnapshots) {
                     Project project = doc.toObject(Project.class);
                     if (project != null) {
-                        project.setProjectId(doc.getId());
                         projects.add(project);
                     }
                 }
-                Log.d(TAG, "Found " + projects.size() + " projects in total");
+                Log.d(TAG, "Found " + projects.size() + " projects created by user");
                 onSuccess.onSuccess(projects);
             })
             .addOnFailureListener(e -> {
-                Log.e(TAG, "Error getting all projects", e);
+                Log.e(TAG, "Error getting created projects", e);
                 onFailure.onFailure(e);
             });
     }
 
     // UPDATE: Cập nhật thông tin project
     public void updateProject(String projectId, Map<String, Object> updates,
-                             OnSuccessListener<Void> onSuccess, OnFailureListener onFailure) {
+                             OnSuccessListener<Void> onSuccess,
+                             OnFailureListener onFailure) {
         db.collection(COLLECTION_PROJECTS)
             .document(projectId)
             .update(updates)
             .addOnSuccessListener(aVoid -> {
-                Log.d(TAG, "Project updated: " + projectId);
+                Log.d(TAG, "Project updated successfully: " + projectId);
                 onSuccess.onSuccess(aVoid);
             })
-            .addOnFailureListener(onFailure);
+            .addOnFailureListener(e -> {
+                Log.e(TAG, "Error updating project", e);
+                onFailure.onFailure(e);
+            });
     }
 
-    // UPDATE: Đổi tên project
+    // UPDATE: Cập nhật tên project
     public void updateProjectName(String projectId, String newName,
-                                  OnSuccessListener<Void> onSuccess, OnFailureListener onFailure) {
+                                 OnSuccessListener<Void> onSuccess,
+                                 OnFailureListener onFailure) {
         Map<String, Object> updates = new HashMap<>();
         updates.put("name", newName);
         updateProject(projectId, updates, onSuccess, onFailure);
     }
 
+    // UPDATE: Cập nhật mô tả project
+    public void updateProjectDescription(String projectId, String newDescription,
+                                        OnSuccessListener<Void> onSuccess,
+                                        OnFailureListener onFailure) {
+        Map<String, Object> updates = new HashMap<>();
+        updates.put("description", newDescription);
+        updateProject(projectId, updates, onSuccess, onFailure);
+    }
+
+    // UPDATE: Tăng số lượng members
+    public void incrementMemberCount(String projectId,
+                                    OnSuccessListener<Void> onSuccess,
+                                    OnFailureListener onFailure) {
+        db.collection(COLLECTION_PROJECTS)
+            .document(projectId)
+            .get()
+            .addOnSuccessListener(doc -> {
+                if (doc.exists()) {
+                    Long currentCount = doc.getLong("memberCount");
+                    int newCount = (currentCount != null ? currentCount.intValue() : 0) + 1;
+
+                    Map<String, Object> updates = new HashMap<>();
+                    updates.put("memberCount", newCount);
+                    updateProject(projectId, updates, onSuccess, onFailure);
+                } else {
+                    onFailure.onFailure(new Exception("Project not found"));
+                }
+            })
+            .addOnFailureListener(onFailure);
+    }
+
+    // UPDATE: Tăng số lượng tasks
+    public void incrementTaskCount(String projectId,
+                                  OnSuccessListener<Void> onSuccess,
+                                  OnFailureListener onFailure) {
+        db.collection(COLLECTION_PROJECTS)
+            .document(projectId)
+            .get()
+            .addOnSuccessListener(doc -> {
+                if (doc.exists()) {
+                    Long currentCount = doc.getLong("taskCount");
+                    int newCount = (currentCount != null ? currentCount.intValue() : 0) + 1;
+
+                    Map<String, Object> updates = new HashMap<>();
+                    updates.put("taskCount", newCount);
+                    updateProject(projectId, updates, onSuccess, onFailure);
+                } else {
+                    onFailure.onFailure(new Exception("Project not found"));
+                }
+            })
+            .addOnFailureListener(onFailure);
+    }
+
     // DELETE: Xóa project
-    public void deleteProject(String projectId, OnSuccessListener<Void> onSuccess,
+    public void deleteProject(String projectId,
+                             OnSuccessListener<Void> onSuccess,
                              OnFailureListener onFailure) {
-        // Đơn giản: Chỉ xóa project document
-        // Sub-collections (members, tasks) sẽ không tự động xóa
-        // Nhưng với quy mô nhỏ, cứ để đó cũng OK!
         db.collection(COLLECTION_PROJECTS)
             .document(projectId)
             .delete()
             .addOnSuccessListener(aVoid -> {
-                Log.d(TAG, "Project deleted: " + projectId);
+                Log.d(TAG, "Project deleted successfully: " + projectId);
                 onSuccess.onSuccess(aVoid);
             })
-            .addOnFailureListener(onFailure);
+            .addOnFailureListener(e -> {
+                Log.e(TAG, "Error deleting project", e);
+                onFailure.onFailure(e);
+            });
     }
 
-    // MEMBERS: Thêm member vào project
-    public void addMember(String projectId, ProjectMember member,
-                         OnSuccessListener<Void> onSuccess, OnFailureListener onFailure) {
+    // REALTIME: Lắng nghe thay đổi của một project
+    public void listenToProject(String projectId,
+                               OnSuccessListener<Project> onDataChanged) {
         db.collection(COLLECTION_PROJECTS)
             .document(projectId)
-            .collection(SUBCOLLECTION_MEMBERS)
-            .document(member.getUserId())
-            .set(member)
-            .addOnSuccessListener(aVoid -> {
-                // Tăng memberCount
-                db.collection(COLLECTION_PROJECTS)
-                    .document(projectId)
-                    .update("memberCount", FieldValue.increment(1))
-                    .addOnSuccessListener(v -> {
-                        Log.d(TAG, "Member added to project: " + projectId);
-                        onSuccess.onSuccess(aVoid);
-                    })
-                    .addOnFailureListener(onFailure);
-            })
-            .addOnFailureListener(onFailure);
-    }
-
-    // MEMBERS: Lấy tất cả members của project
-    public void getProjectMembers(String projectId, OnSuccessListener<List<ProjectMember>> onSuccess,
-                                 OnFailureListener onFailure) {
-        db.collection(COLLECTION_PROJECTS)
-            .document(projectId)
-            .collection(SUBCOLLECTION_MEMBERS)
-            .orderBy("joinedAt", Query.Direction.ASCENDING)
-            .get()
-            .addOnSuccessListener(querySnapshot -> {
-                List<ProjectMember> members = new ArrayList<>();
-                for (DocumentSnapshot doc : querySnapshot) {
-                    ProjectMember member = doc.toObject(ProjectMember.class);
-                    if (member != null) {
-                        members.add(member);
-                    }
-                }
-                Log.d(TAG, "Found " + members.size() + " members in project");
-                onSuccess.onSuccess(members);
-            })
-            .addOnFailureListener(onFailure);
-    }
-
-    // MEMBERS: Lấy tất cả members của project với thông tin User đầy đủ
-    public void getProjectMembersWithDetails(String projectId,
-                                 OnSuccessListener<List<com.fptu.prm392.mad.models.User>> onSuccess,
-                                 OnFailureListener onFailure) {
-        db.collection(COLLECTION_PROJECTS)
-            .document(projectId)
-            .collection(SUBCOLLECTION_MEMBERS)
-            .orderBy("joinedAt", Query.Direction.ASCENDING)
-            .get()
-            .addOnSuccessListener(querySnapshot -> {
-                List<com.fptu.prm392.mad.models.User> users = new ArrayList<>();
-
-                for (DocumentSnapshot doc : querySnapshot) {
-                    ProjectMember member = doc.toObject(ProjectMember.class);
-                    if (member != null) {
-                        // Convert ProjectMember to User (ProjectMember đã có đầy đủ thông tin)
-                        com.fptu.prm392.mad.models.User user = new com.fptu.prm392.mad.models.User();
-                        user.setUserId(member.getUserId());
-                        user.setEmail(member.getEmail());
-                        user.setFullname(member.getFullname());
-                        user.setAvatar(member.getAvatar());
-                        users.add(user);
-                    }
+            .addSnapshotListener((snapshot, error) -> {
+                if (error != null) {
+                    Log.e(TAG, "Listen failed for project: " + projectId, error);
+                    return;
                 }
 
-                Log.d(TAG, "Loaded " + users.size() + " user details from ProjectMembers");
-                onSuccess.onSuccess(users);
-            })
-            .addOnFailureListener(onFailure);
-    }
-
-    // MEMBERS: Xóa member khỏi project
-    public void removeMember(String projectId, String userId,
-                            OnSuccessListener<Void> onSuccess, OnFailureListener onFailure) {
-        db.collection(COLLECTION_PROJECTS)
-            .document(projectId)
-            .collection(SUBCOLLECTION_MEMBERS)
-            .document(userId)
-            .delete()
-            .addOnSuccessListener(aVoid -> {
-                // Giảm memberCount
-                db.collection(COLLECTION_PROJECTS)
-                    .document(projectId)
-                    .update("memberCount", FieldValue.increment(-1))
-                    .addOnSuccessListener(v -> {
-                        Log.d(TAG, "Member removed from project: " + projectId);
-                        onSuccess.onSuccess(aVoid);
-                    })
-                    .addOnFailureListener(onFailure);
-            })
-            .addOnFailureListener(onFailure);
+                if (snapshot != null && snapshot.exists()) {
+                    Project project = snapshot.toObject(Project.class);
+                    if (project != null) {
+                        Log.d(TAG, "Project data changed: " + projectId);
+                        onDataChanged.onSuccess(project);
+                    }
+                }
+            });
     }
 }
+

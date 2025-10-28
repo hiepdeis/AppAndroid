@@ -9,4 +9,9 @@
     <style name="Theme.MyApplicationDemo" parent="Base.Theme.MyApplicationDemo">
 
     </style>
+
+    <style name="Theme.MyApplicationDemo.NoActionBar">
+        <item name="windowActionBar">false</item>
+        <item name="windowNoTitle">true</item>
+    </style>
 </resources>

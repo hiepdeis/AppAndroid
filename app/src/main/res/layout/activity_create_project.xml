@@ -1,146 +1,93 @@
 <?xml version="1.0" encoding="utf-8"?>
-<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
-    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="#F5F5F5"
-    tools:context=".CreateProjectActivity">
+    android:orientation="vertical"
+    android:padding="24dp"
+    android:background="@android:color/white">
 
-    <LinearLayout
+    <!-- Header -->
+    <TextView
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="vertical"
-        android:padding="24dp">
+        android:text="Tạo Project Mới"
+        android:textSize="28sp"
+        android:textStyle="bold"
+        android:textColor="@android:color/black"
+        android:gravity="center"
+        android:layout_marginBottom="32dp"/>
 
-        <!-- Header -->
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Tạo Dự Án Mới"
-            android:textSize="28sp"
-            android:textStyle="bold"
-            android:textColor="#333333"
-            android:layout_marginBottom="8dp" />
+    <!-- Input: Tên Project -->
+    <com.google.android.material.textfield.TextInputLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="16dp"
+        android:hint="Tên Project"
+        app:boxStrokeColor="@color/design_default_color_primary"
+        app:hintTextColor="@color/design_default_color_primary">
 
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Nhập thông tin dự án của bạn"
-            android:textSize="16sp"
-            android:textColor="#666666"
-            android:layout_marginBottom="32dp" />
-
-        <!-- Tên dự án -->
-        <com.google.android.material.textfield.TextInputLayout
+        <com.google.android.material.textfield.TextInputEditText
+            android:id="@+id/etProjectName"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginBottom="16dp"
-            app:boxStrokeColor="#E91E63"
-            app:hintTextColor="#E91E63"
-            style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox">
+            android:inputType="text"
+            android:maxLines="1"/>
 
-            <com.google.android.material.textfield.TextInputEditText
-                android:id="@+id/etProjectName"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:hint="Tên dự án"
-                android:inputType="text"
-                android:textSize="16sp"
-                android:maxLines="1" />
+    </com.google.android.material.textfield.TextInputLayout>
 
-        </com.google.android.material.textfield.TextInputLayout>
+    <!-- Input: Mô tả Project -->
+    <com.google.android.material.textfield.TextInputLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="24dp"
+        android:hint="Mô tả Project"
+        app:boxStrokeColor="@color/design_default_color_primary"
+        app:hintTextColor="@color/design_default_color_primary">
 
-        <!-- Mô tả dự án -->
-        <com.google.android.material.textfield.TextInputLayout
+        <com.google.android.material.textfield.TextInputEditText
+            android:id="@+id/etProjectDescription"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginBottom="24dp"
-            app:boxStrokeColor="#E91E63"
-            app:hintTextColor="#E91E63"
-            style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox">
+            android:inputType="textMultiLine"
+            android:lines="4"
+            android:gravity="top|start"
+            android:maxLines="6"/>
 
-            <com.google.android.material.textfield.TextInputEditText
-                android:id="@+id/etProjectDescription"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:hint="Mô tả dự án"
-                android:inputType="textMultiLine"
-                android:textSize="16sp"
-                android:minLines="4"
-                android:maxLines="8"
-                android:gravity="top" />
+    </com.google.android.material.textfield.TextInputLayout>
 
-        </com.google.android.material.textfield.TextInputLayout>
+    <!-- Button: Tạo Project -->
+    <Button
+        android:id="@+id/btnCreateProject"
+        android:layout_width="match_parent"
+        android:layout_height="60dp"
+        android:text="TẠO PROJECT"
+        android:textSize="16sp"
+        android:textStyle="bold"
+        android:backgroundTint="@color/design_default_color_primary"
+        android:textColor="@android:color/white"
+        android:layout_marginBottom="16dp"/>
 
-        <!-- Info box -->
-        <androidx.cardview.widget.CardView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginBottom="24dp"
-            app:cardCornerRadius="8dp"
-            app:cardBackgroundColor="#E3F2FD"
-            app:cardElevation="0dp">
+    <!-- ProgressBar -->
+    <ProgressBar
+        android:id="@+id/progressBar"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center"
+        android:visibility="gone"/>
 
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="horizontal"
-                android:padding="12dp"
-                android:gravity="center_vertical">
+    <!-- Hướng dẫn -->
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="💡 Nhập thông tin project và bấm nút để lưu vào Firestore Database"
+        android:textSize="14sp"
+        android:textColor="@android:color/darker_gray"
+        android:gravity="center"
+        android:layout_marginTop="16dp"
+        android:padding="16dp"
+        android:background="#F5F5F5"
+        android:layout_marginBottom="8dp"/>
 
-                <ImageView
-                    android:layout_width="24dp"
-                    android:layout_height="24dp"
-                    android:src="@android:drawable/ic_dialog_info"
-                    android:tint="#2196F3"
-                    android:layout_marginEnd="12dp" />
-
-                <TextView
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:text="Bạn sẽ tự động trở thành Owner của dự án này"
-                    android:textSize="14sp"
-                    android:textColor="#1976D2" />
-
-            </LinearLayout>
-
-        </androidx.cardview.widget.CardView>
-
-        <!-- Nút Tạo Project -->
-        <Button
-            android:id="@+id/btnCreateProject"
-            android:layout_width="match_parent"
-            android:layout_height="56dp"
-            android:text="Tạo Dự Án"
-            android:textSize="16sp"
-            android:textStyle="bold"
-            android:backgroundTint="#E91E63"
-            android:textColor="#FFFFFF"
-            android:layout_marginBottom="12dp" />
-
-        <!-- Nút Hủy -->
-        <Button
-            android:id="@+id/btnCancel"
-            android:layout_width="match_parent"
-            android:layout_height="56dp"
-            android:text="Hủy"
-            android:textSize="16sp"
-            android:backgroundTint="#9E9E9E"
-            android:textColor="#FFFFFF"
-            android:layout_marginBottom="16dp"
-            style="@style/Widget.MaterialComponents.Button.OutlinedButton" />
-
-        <!-- Progress Bar -->
-        <ProgressBar
-            android:id="@+id/progressBar"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_gravity="center"
-            android:visibility="gone" />
-
-    </LinearLayout>
-
-</ScrollView>
+</LinearLayout>
 

@@ -7,138 +7,93 @@ import android.widget.Button;
 import android.widget.ProgressBar;
 import android.widget.Toast;
 
-import androidx.activity.EdgeToEdge;
 import androidx.appcompat.app.AppCompatActivity;
 
-import com.fptu.prm392.mad.models.Project;
-import com.fptu.prm392.mad.models.ProjectMember;
-import com.fptu.prm392.mad.models.User;
 import com.fptu.prm392.mad.repositories.ProjectRepository;
-import com.fptu.prm392.mad.repositories.UserRepository;
 import com.google.android.material.textfield.TextInputEditText;
-import com.google.firebase.auth.FirebaseAuth;
-import com.google.firebase.auth.FirebaseUser;
 
 public class CreateProjectActivity extends AppCompatActivity {
 
     private TextInputEditText etProjectName, etProjectDescription;
-    private Button btnCreateProject, btnCancel;
+    private Button btnCreateProject;
     private ProgressBar progressBar;
-
-    private FirebaseAuth mAuth;
-    private ProjectRepository projectRepo;
-    private UserRepository userRepo;
+    private ProjectRepository projectRepository;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        EdgeToEdge.enable(this);
         setContentView(R.layout.activity_create_project);
 
-        // Khởi tạo
-        mAuth = FirebaseAuth.getInstance();
-        projectRepo = new ProjectRepository();
-        userRepo = new UserRepository();
+        // Khởi tạo Repository - Firestore tự động kết nối ở đây
+        projectRepository = new ProjectRepository();
 
-        // Ánh xạ views
+        // Ánh xạ các view
         etProjectName = findViewById(R.id.etProjectName);
         etProjectDescription = findViewById(R.id.etProjectDescription);
         btnCreateProject = findViewById(R.id.btnCreateProject);
-        btnCancel = findViewById(R.id.btnCancel);
         progressBar = findViewById(R.id.progressBar);
 
-        // Xử lý nút Tạo Project
+        // Xử lý sự kiện khi bấm nút "Tạo Project"
         btnCreateProject.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 createProject();
             }
         });
-
-        // Xử lý nút Hủy
-        btnCancel.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                finish();
-            }
-        });
     }
 
     private void createProject() {
+        // Lấy dữ liệu từ input
         String projectName = etProjectName.getText().toString().trim();
         String projectDescription = etProjectDescription.getText().toString().trim();
 
-        // Validation
+        // Validate dữ liệu
         if (TextUtils.isEmpty(projectName)) {
-            etProjectName.setError("Vui lòng nhập tên dự án");
+            etProjectName.setError("Vui lòng nhập tên project");
+            etProjectName.requestFocus();
             return;
         }
 
         if (TextUtils.isEmpty(projectDescription)) {
-            etProjectDescription.setError("Vui lòng nhập mô tả dự án");
+            etProjectDescription.setError("Vui lòng nhập mô tả project");
+            etProjectDescription.requestFocus();
             return;
         }
 
-        // Hiển thị progress
+        // Hiển thị loading
         progressBar.setVisibility(View.VISIBLE);
         btnCreateProject.setEnabled(false);
 
-        FirebaseUser currentUser = mAuth.getCurrentUser();
-        if (currentUser == null) {
-            Toast.makeText(this, "Bạn chưa đăng nhập!", Toast.LENGTH_SHORT).show();
-            finish();
-            return;
-        }
+        // GỌI FIRESTORE ĐỂ LƯU DỮ LIỆU
+        projectRepository.createProject(
+            projectName,
+            projectDescription,
 
-        String userId = currentUser.getUid();
-
-        // Lấy thông tin user để tạo ProjectMember
-        userRepo.getUserById(userId,
-            user -> {
-                // Tạo project
-                Project newProject = new Project(
-                    null,
-                    projectName,
-                    projectDescription,
-                    userId
-                );
-
-                // Tạo creator member với role = "owner"
-                ProjectMember creator = new ProjectMember(
-                    userId,
-                    user.getFullname(),
-                    user.getEmail(),
-                    user.getAvatar(),
-                    "owner"  // Creator = Owner
-                );
-
-                // Lưu vào Firestore
-                projectRepo.createProject(newProject, creator,
-                    projectId -> {
-                        progressBar.setVisibility(View.GONE);
-                        btnCreateProject.setEnabled(true);
-
-                        Toast.makeText(CreateProjectActivity.this,
-                            "Tạo dự án thành công!", Toast.LENGTH_SHORT).show();
-
-                        // Quay về HomeActivity
-                        finish();
-                    },
-                    error -> {
-                        progressBar.setVisibility(View.GONE);
-                        btnCreateProject.setEnabled(true);
-
-                        Toast.makeText(CreateProjectActivity.this,
-                            "Lỗi: " + error.getMessage(), Toast.LENGTH_LONG).show();
-                    }
-                );
-            },
-            error -> {
+            // Callback khi thành công
+            projectId -> {
                 progressBar.setVisibility(View.GONE);
                 btnCreateProject.setEnabled(true);
 
-                Toast.makeText(this, "Không thể lấy thông tin người dùng",
-                    Toast.LENGTH_SHORT).show();
+                Toast.makeText(CreateProjectActivity.this,
+                    "✅ Tạo project thành công!\nID: " + projectId,
+                    Toast.LENGTH_LONG).show();
+
+                // Xóa dữ liệu input
+                etProjectName.setText("");
+                etProjectDescription.setText("");
+
+                // Có thể chuyển sang màn hình khác hoặc đóng Activity
+                // finish();
+            },
+
+            // Callback khi thất bại
+            e -> {
+                progressBar.setVisibility(View.GONE);
+                btnCreateProject.setEnabled(true);
+
+                Toast.makeText(CreateProjectActivity.this,
+                    "❌ Lỗi: " + e.getMessage(),
+                    Toast.LENGTH_LONG).show();
             }
         );
     }
