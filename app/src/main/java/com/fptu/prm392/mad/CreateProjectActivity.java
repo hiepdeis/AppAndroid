@@ -9,8 +9,11 @@ import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
 
+import com.fptu.prm392.mad.repositories.NotificationRepository;
 import com.fptu.prm392.mad.repositories.ProjectRepository;
+import com.fptu.prm392.mad.utils.NotificationHelper;
 import com.google.android.material.textfield.TextInputEditText;
+import com.google.firebase.auth.FirebaseAuth;
 
 public class CreateProjectActivity extends AppCompatActivity {
 
@@ -18,6 +21,7 @@ public class CreateProjectActivity extends AppCompatActivity {
     private Button btnCreateProject;
     private ProgressBar progressBar;
     private ProjectRepository projectRepository;
+    private NotificationRepository notificationRepository;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -26,6 +30,7 @@ public class CreateProjectActivity extends AppCompatActivity {
 
         // Khởi tạo Repository - Firestore tự động kết nối ở đây
         projectRepository = new ProjectRepository();
+        notificationRepository = new NotificationRepository();
 
         // Ánh xạ các view
         etProjectName = findViewById(R.id.etProjectName);
@@ -77,6 +82,31 @@ public class CreateProjectActivity extends AppCompatActivity {
                 Toast.makeText(CreateProjectActivity.this,
                     "✅ Tạo project thành công!\nID: " + projectId,
                     Toast.LENGTH_LONG).show();
+
+                // Gửi Local Notification
+                String currentUserId = FirebaseAuth.getInstance().getCurrentUser().getUid();
+                NotificationHelper.showNotification(
+                    CreateProjectActivity.this,
+                    "Project mới đã tạo",
+                    "Bạn đã tạo project: " + projectName,
+                    projectId
+                );
+
+                // Lưu notification vào Firestore
+                notificationRepository.saveNotificationToFirestore(
+                    currentUserId,
+                    "project_created",
+                    "Project mới đã tạo",
+                    "Bạn đã tạo project: " + projectName,
+                    projectId,
+                    null,
+                    notificationId -> {
+                        // Notification đã lưu thành công
+                    },
+                    e -> {
+                        // Lỗi khi lưu notification (không ảnh hưởng đến flow chính)
+                    }
+                );
 
                 // Xóa dữ liệu input
                 etProjectName.setText("");
