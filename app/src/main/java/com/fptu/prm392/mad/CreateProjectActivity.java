@@ -11,6 +11,7 @@ import androidx.appcompat.app.AppCompatActivity;
 
 import com.fptu.prm392.mad.repositories.NotificationRepository;
 import com.fptu.prm392.mad.repositories.ProjectRepository;
+import com.fptu.prm392.mad.utils.NetworkMonitor;
 import com.fptu.prm392.mad.utils.NotificationHelper;
 import com.google.android.material.textfield.TextInputEditText;
 import com.google.firebase.auth.FirebaseAuth;
@@ -29,7 +30,8 @@ public class CreateProjectActivity extends AppCompatActivity {
         setContentView(R.layout.activity_create_project);
 
         // Khởi tạo Repository - Firestore tự động kết nối ở đây
-        projectRepository = new ProjectRepository();
+        // Truyền context để ProjectRepository có thể check network status
+        projectRepository = new ProjectRepository(this);
         notificationRepository = new NotificationRepository();
 
         // Ánh xạ các view
@@ -79,9 +81,15 @@ public class CreateProjectActivity extends AppCompatActivity {
                 progressBar.setVisibility(View.GONE);
                 btnCreateProject.setEnabled(true);
 
-                Toast.makeText(CreateProjectActivity.this,
-                    "✅ Tạo project thành công!\nID: " + projectId,
-                    Toast.LENGTH_LONG).show();
+                // Kiểm tra network status để hiển thị message phù hợp
+                NetworkMonitor networkMonitor = NetworkMonitor.getInstance(CreateProjectActivity.this);
+                boolean isOffline = !networkMonitor.isNetworkAvailable();
+                
+                String message = isOffline 
+                    ? "✅ Project đã được lưu vào cache!\nSẽ tự động sync khi có internet.\nID: " + projectId
+                    : "✅ Tạo project thành công!\nID: " + projectId;
+                
+                Toast.makeText(CreateProjectActivity.this, message, Toast.LENGTH_LONG).show();
 
                 // Gửi Local Notification
                 String currentUserId = FirebaseAuth.getInstance().getCurrentUser().getUid();

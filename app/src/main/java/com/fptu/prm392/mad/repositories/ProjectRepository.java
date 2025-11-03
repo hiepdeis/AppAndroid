@@ -1,8 +1,13 @@
 package com.fptu.prm392.mad.repositories;
 
+import android.content.Context;
+import android.os.Handler;
+import android.os.Looper;
 import android.util.Log;
 
 import com.fptu.prm392.mad.models.Project;
+import com.fptu.prm392.mad.utils.NetworkMonitor;
+import com.fptu.prm392.mad.utils.SyncStatusMonitor;
 import com.google.android.gms.tasks.OnFailureListener;
 import com.google.android.gms.tasks.OnSuccessListener;
 import com.google.firebase.auth.FirebaseAuth;
@@ -16,6 +21,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 public class ProjectRepository {
     private static final String TAG = "ProjectRepository";
@@ -23,11 +29,17 @@ public class ProjectRepository {
 
     private final FirebaseFirestore db;
     private final FirebaseAuth auth;
+    private Context context;
 
     public ProjectRepository() {
         // Kết nối Firestore tự động khi khởi tạo
         this.db = FirebaseFirestore.getInstance();
         this.auth = FirebaseAuth.getInstance();
+    }
+
+    public ProjectRepository(Context context) {
+        this();
+        this.context = context.getApplicationContext();
     }
 
     // CREATE: Tạo project mới
@@ -45,16 +57,57 @@ public class ProjectRepository {
         // Tạo object Project
         Project project = new Project(projectId, name, description, currentUserId, currentUserName);
 
+        // Kiểm tra network status (phải final để dùng trong lambda)
+        final boolean isOffline;
+        if (context != null) {
+            NetworkMonitor networkMonitor = NetworkMonitor.getInstance(context);
+            isOffline = !networkMonitor.isNetworkAvailable();
+        } else {
+            isOffline = false;
+        }
+
+        // Flag để đảm bảo onSuccess chỉ được gọi một lần
+        AtomicBoolean successCalled = new AtomicBoolean(false);
+
         // Lưu vào Firestore
         docRef.set(project)
             .addOnSuccessListener(aVoid -> {
                 Log.d(TAG, "Project created successfully: " + projectId);
-                onSuccess.onSuccess(projectId); // Trả về projectId vừa tạo
+                if (successCalled.compareAndSet(false, true)) {
+                    onSuccess.onSuccess(projectId); // Trả về projectId vừa tạo
+                }
             })
             .addOnFailureListener(e -> {
                 Log.e(TAG, "Error creating project", e);
-                onFailure.onFailure(e);
+                // Nếu offline và có lỗi, vẫn coi như thành công (đã queue)
+                String errorMessage = e.getMessage();
+                if (isOffline && errorMessage != null && 
+                    (errorMessage.contains("network") || errorMessage.contains("unavailable"))) {
+                    if (successCalled.compareAndSet(false, true)) {
+                        Log.d(TAG, "Offline mode: Project queued despite error. ID: " + projectId);
+                        onSuccess.onSuccess(projectId);
+                    }
+                } else {
+                    onFailure.onFailure(e);
+                }
             });
+
+        // Nếu offline, return success ngay sau 500ms (Firestore sẽ queue operation)
+        // Điều này giúp UX tốt hơn, không phải chờ timeout
+        if (isOffline) {
+            Handler handler = new Handler(Looper.getMainLooper());
+            handler.postDelayed(() -> {
+                if (successCalled.compareAndSet(false, true)) {
+                    Log.d(TAG, "Offline mode: Project queued for sync. ID: " + projectId);
+                    // Lưu vào SyncStatusMonitor để track khi online lại
+                    if (context != null) {
+                        SyncStatusMonitor syncMonitor = new SyncStatusMonitor(context);
+                        syncMonitor.addPendingProject(projectId, name);
+                    }
+                    onSuccess.onSuccess(projectId);
+                }
+            }, 500); // Return success sau 500ms nếu offline
+        }
     }
 
     // READ: Lấy project theo ID
