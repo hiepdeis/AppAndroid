@@ -23,6 +23,22 @@
             android:name=".CreateProjectActivity"
             android:exported="false" />
 
+        <!-- Project Detail Activity - Màn hình chi tiết project -->
+        <activity
+            android:name=".ProjectDetailActivity"
+            android:exported="false" />
+
+        <!-- Member List Activity - Màn hình danh sách members -->
+        <activity
+            android:name=".MemberListActivity"
+            android:exported="false" />
+
+        <!-- Create Task Activity - Màn hình tạo task mới -->
+        <activity
+            android:name=".CreateTaskActivity"
+            android:exported="false" />
+
+
         <!-- Register Activity - Màn hình đăng ký -->
         <activity
             android:name=".auth.RegisterActivity"

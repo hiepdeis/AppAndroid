@@ -1,6 +1,7 @@
 package com.fptu.prm392.mad.models;
 
 public class ProjectMember {
+    private String projectId;       // ID của project mà member này thuộc về
     private String userId;
     private String fullname;        // Denormalized từ User
     private String email;           // Denormalized từ User
@@ -13,7 +14,8 @@ public class ProjectMember {
     }
 
     // Constructor
-    public ProjectMember(String userId, String fullname, String email, String avatar, String projectRole) {
+    public ProjectMember(String projectId, String userId, String fullname, String email, String avatar, String projectRole) {
+        this.projectId = projectId;
         this.userId = userId;
         this.fullname = fullname;
         this.email = email;
@@ -23,6 +25,14 @@ public class ProjectMember {
     }
 
     // Getters và Setters
+    public String getProjectId() {
+        return projectId;
+    }
+
+    public void setProjectId(String projectId) {
+        this.projectId = projectId;
+    }
+
     public String getUserId() {
         return userId;
     }

@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="horizontal"
+    android:padding="12dp"
+    android:gravity="center_vertical"
+    android:background="?attr/selectableItemBackground">
+
+    <!-- No Column -->
+    <TextView
+        android:id="@+id/tvNo"
+        android:layout_width="40dp"
+        android:layout_height="wrap_content"
+        android:text="1"
+        android:textSize="14sp"
+        android:textColor="#333333"
+        android:gravity="center"
+        android:layout_marginStart="8dp" />
+
+    <!-- Name Column -->
+    <TextView
+        android:id="@+id/tvMemberName"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_weight="1"
+        android:text="Member Name"
+        android:textSize="14sp"
+        android:textColor="#333333"
+        android:layout_marginStart="12dp"
+        android:ellipsize="end"
+        android:maxLines="1" />
+
+    <!-- Role Column -->
+    <TextView
+        android:id="@+id/tvMemberRole"
+        android:layout_width="80dp"
+        android:layout_height="wrap_content"
+        android:text="Owner"
+        android:textSize="12sp"
+        android:textColor="#FFFFFF"
+        android:gravity="center"
+        android:padding="6dp"
+        android:layout_marginStart="8dp"
+        android:background="@drawable/bg_status_done" />
+
+    <!-- Delete Icon Column -->
+    <ImageView
+        android:id="@+id/ivDeleteMember"
+        android:layout_width="32dp"
+        android:layout_height="32dp"
+        android:src="@drawable/delete_member"
+        android:padding="6dp"
+        android:background="?attr/selectableItemBackgroundBorderless"
+        android:clickable="true"
+        android:focusable="true"
+        android:layout_marginStart="8dp"
+        android:contentDescription="Delete Member" />
+
+</LinearLayout>
+

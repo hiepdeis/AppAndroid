@@ -8,6 +8,9 @@
     <color name="colorPrimary">#AAAA11</color>
     <color name="colorPrimaryDark">#AAAA11</color>
 
+    <!-- Bottom Navigation Colors -->
+    <color name="bottom_nav_selected">#4CAF50</color>
+    <color name="bottom_nav_unselected">#757575</color>
 
 
 </resources>

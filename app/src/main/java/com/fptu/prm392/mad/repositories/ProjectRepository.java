@@ -37,6 +37,7 @@ public class ProjectRepository {
 
         String currentUserId = auth.getCurrentUser().getUid();
         String currentUserName = auth.getCurrentUser().getDisplayName();
+        String currentUserEmail = auth.getCurrentUser().getEmail();
 
         // Tạo document reference với ID tự động
         DocumentReference docRef = db.collection(COLLECTION_PROJECTS).document();
@@ -49,7 +50,31 @@ public class ProjectRepository {
         docRef.set(project)
             .addOnSuccessListener(aVoid -> {
                 Log.d(TAG, "Project created successfully: " + projectId);
-                onSuccess.onSuccess(projectId); // Trả về projectId vừa tạo
+
+                // Tạo owner member trong subcollection
+                com.fptu.prm392.mad.models.ProjectMember ownerMember = new com.fptu.prm392.mad.models.ProjectMember(
+                    projectId, // projectId
+                    currentUserId,
+                    currentUserName != null ? currentUserName : currentUserEmail,
+                    currentUserEmail,
+                    null, // avatar
+                    "owner"
+                );
+
+                db.collection(COLLECTION_PROJECTS)
+                    .document(projectId)
+                    .collection("members")
+                    .document(currentUserId)
+                    .set(ownerMember)
+                    .addOnSuccessListener(aVoid2 -> {
+                        Log.d(TAG, "Owner member added to project: " + projectId);
+                        onSuccess.onSuccess(projectId);
+                    })
+                    .addOnFailureListener(e -> {
+                        Log.e(TAG, "Error adding owner member", e);
+                        // Still return success for project creation
+                        onSuccess.onSuccess(projectId);
+                    });
             })
             .addOnFailureListener(e -> {
                 Log.e(TAG, "Error creating project", e);
@@ -91,7 +116,8 @@ public class ProjectRepository {
 
         db.collection(COLLECTION_PROJECTS)
             .whereArrayContains("memberIds", currentUserId) // Query theo memberIds
-            .orderBy("createdAt", Query.Direction.DESCENDING)
+            // NOTE: Bỏ orderBy để tránh lỗi missing composite index
+            // Sẽ sort trên client-side thay thế
             .get()
             .addOnSuccessListener(queryDocumentSnapshots -> {
                 List<Project> projects = new ArrayList<>();
@@ -101,6 +127,14 @@ public class ProjectRepository {
                         projects.add(project);
                     }
                 }
+
+                // Sort by createdAt descending trên client-side
+                projects.sort((p1, p2) -> {
+                    if (p1.getCreatedAt() == null) return 1;
+                    if (p2.getCreatedAt() == null) return -1;
+                    return p2.getCreatedAt().compareTo(p1.getCreatedAt());
+                });
+
                 Log.d(TAG, "Found " + projects.size() + " projects for user");
                 onSuccess.onSuccess(projects);
             })
@@ -117,7 +151,7 @@ public class ProjectRepository {
 
         db.collection(COLLECTION_PROJECTS)
             .whereEqualTo("createdBy", currentUserId)
-            .orderBy("createdAt", Query.Direction.DESCENDING)
+            // NOTE: Bỏ orderBy để tránh lỗi missing index
             .get()
             .addOnSuccessListener(queryDocumentSnapshots -> {
                 List<Project> projects = new ArrayList<>();
@@ -127,6 +161,14 @@ public class ProjectRepository {
                         projects.add(project);
                     }
                 }
+
+                // Sort by createdAt descending trên client-side
+                projects.sort((p1, p2) -> {
+                    if (p1.getCreatedAt() == null) return 1;
+                    if (p2.getCreatedAt() == null) return -1;
+                    return p2.getCreatedAt().compareTo(p1.getCreatedAt());
+                });
+
                 Log.d(TAG, "Found " + projects.size() + " projects created by user");
                 onSuccess.onSuccess(projects);
             })
@@ -232,6 +274,111 @@ public class ProjectRepository {
             });
     }
 
+    // ============ PROJECT MEMBERS MANAGEMENT ============
+
+    // Lấy danh sách members của project
+    public void getProjectMembers(String projectId,
+                                 OnSuccessListener<List<com.fptu.prm392.mad.models.ProjectMember>> onSuccess,
+                                 OnFailureListener onFailure) {
+        db.collection(COLLECTION_PROJECTS)
+            .document(projectId)
+            .collection("members")
+            .get()
+            .addOnSuccessListener(querySnapshot -> {
+                List<com.fptu.prm392.mad.models.ProjectMember> members = new ArrayList<>();
+                for (DocumentSnapshot doc : querySnapshot) {
+                    com.fptu.prm392.mad.models.ProjectMember member = doc.toObject(com.fptu.prm392.mad.models.ProjectMember.class);
+                    if (member != null) {
+                        members.add(member);
+                    }
+                }
+                Log.d(TAG, "Found " + members.size() + " members in project " + projectId);
+                onSuccess.onSuccess(members);
+            })
+            .addOnFailureListener(e -> {
+                Log.e(TAG, "Error getting project members", e);
+                onFailure.onFailure(e);
+            });
+    }
+
+    // Thêm member vào project
+    public void addMemberToProject(String projectId, com.fptu.prm392.mad.models.ProjectMember member,
+                                  OnSuccessListener<Void> onSuccess,
+                                  OnFailureListener onFailure) {
+        db.collection(COLLECTION_PROJECTS)
+            .document(projectId)
+            .collection("members")
+            .document(member.getUserId())
+            .set(member)
+            .addOnSuccessListener(aVoid -> {
+                Log.d(TAG, "Member added to project: " + member.getUserId());
+                // Also update memberIds array and memberCount in project
+                updateProjectMemberArrays(projectId, member.getUserId(), true,
+                    v -> onSuccess.onSuccess(aVoid), onFailure);
+            })
+            .addOnFailureListener(e -> {
+                Log.e(TAG, "Error adding member", e);
+                onFailure.onFailure(e);
+            });
+    }
+
+    // Xóa member khỏi project
+    public void removeMemberFromProject(String projectId, String userId,
+                                       OnSuccessListener<Void> onSuccess,
+                                       OnFailureListener onFailure) {
+        db.collection(COLLECTION_PROJECTS)
+            .document(projectId)
+            .collection("members")
+            .document(userId)
+            .delete()
+            .addOnSuccessListener(aVoid -> {
+                Log.d(TAG, "Member removed from project: " + userId);
+                // Also update memberIds array and memberCount in project
+                updateProjectMemberArrays(projectId, userId, false,
+                    v -> onSuccess.onSuccess(aVoid), onFailure);
+            })
+            .addOnFailureListener(e -> {
+                Log.e(TAG, "Error removing member", e);
+                onFailure.onFailure(e);
+            });
+    }
+
+    // Update memberIds array and memberCount in project document
+    private void updateProjectMemberArrays(String projectId, String userId, boolean isAdding,
+                                          OnSuccessListener<Void> onSuccess,
+                                          OnFailureListener onFailure) {
+        db.collection(COLLECTION_PROJECTS)
+            .document(projectId)
+            .get()
+            .addOnSuccessListener(doc -> {
+                if (doc.exists()) {
+                    List<String> memberIds = (List<String>) doc.get("memberIds");
+                    if (memberIds == null) memberIds = new ArrayList<>();
+
+                    if (isAdding) {
+                        if (!memberIds.contains(userId)) {
+                            memberIds.add(userId);
+                        }
+                    } else {
+                        memberIds.remove(userId);
+                    }
+
+                    Map<String, Object> updates = new HashMap<>();
+                    updates.put("memberIds", memberIds);
+                    updates.put("memberCount", memberIds.size());
+
+                    db.collection(COLLECTION_PROJECTS)
+                        .document(projectId)
+                        .update(updates)
+                        .addOnSuccessListener(onSuccess)
+                        .addOnFailureListener(onFailure);
+                } else {
+                    onFailure.onFailure(new Exception("Project not found"));
+                }
+            })
+            .addOnFailureListener(onFailure);
+    }
+
     // REALTIME: Lắng nghe thay đổi của một project
     public void listenToProject(String projectId,
                                OnSuccessListener<Project> onDataChanged) {
@@ -253,4 +400,3 @@ public class ProjectRepository {
             });
     }
 }
-

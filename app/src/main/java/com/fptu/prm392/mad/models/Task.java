@@ -11,7 +11,7 @@ public class Task {
     private String description;
     private String status;          // "todo", "in_progress", "done"
     private List<String> assignees; // Array of userIds
-    private String createdBy;       // userId của người tạo
+    private String createdBy;       // userId của người tạo task
     private Timestamp createdAt;
     private Timestamp dueDate;      // Nullable
 
@@ -73,6 +73,7 @@ public class Task {
         this.status = status;
     }
 
+
     public List<String> getAssignees() {
         return assignees;
     }
@@ -130,6 +131,10 @@ public class Task {
 
     public boolean isDone() {
         return "done".equals(status);
+    }
+
+    public boolean isCreator(String userId) {
+        return createdBy != null && createdBy.equals(userId);
     }
 }
 

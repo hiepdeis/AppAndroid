@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="horizontal"
+    android:padding="12dp"
+    android:gravity="center_vertical"
+    android:background="?attr/selectableItemBackground">
+
+    <!-- User Name -->
+    <TextView
+        android:id="@+id/tvUserName"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_weight="1"
+        android:text="User Name"
+        android:textSize="14sp"
+        android:textColor="#333333"
+        android:layout_marginStart="8dp"
+        android:ellipsize="end"
+        android:maxLines="1" />
+
+    <!-- User Email -->
+    <TextView
+        android:id="@+id/tvUserEmail"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_weight="1"
+        android:text="user@email.com"
+        android:textSize="12sp"
+        android:textColor="#999999"
+        android:layout_marginStart="8dp"
+        android:ellipsize="end"
+        android:maxLines="1" />
+
+    <!-- Add Button -->
+    <ImageView
+        android:id="@+id/btnAddUser"
+        android:layout_width="32dp"
+        android:layout_height="32dp"
+        android:src="@drawable/add_people"
+        android:padding="4dp"
+        android:background="?attr/selectableItemBackgroundBorderless"
+        android:contentDescription="Add User" />
+
+</LinearLayout>
+
