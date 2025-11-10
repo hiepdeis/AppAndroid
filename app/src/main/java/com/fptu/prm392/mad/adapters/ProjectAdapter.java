@@ -17,6 +17,7 @@ import java.util.List;
 public class ProjectAdapter extends RecyclerView.Adapter<ProjectAdapter.ProjectViewHolder> {
 
     private List<Project> projects;
+    private List<Project> projectsFiltered; // List sau khi filter
     private List<Integer> myTodoCounts; // Số lượng todo tasks của current user cho mỗi project
     private String currentUserId;
     private OnProjectClickListener listener;
@@ -27,18 +28,49 @@ public class ProjectAdapter extends RecyclerView.Adapter<ProjectAdapter.ProjectV
 
     public ProjectAdapter(String currentUserId, OnProjectClickListener listener) {
         this.projects = new ArrayList<>();
+        this.projectsFiltered = new ArrayList<>();
         this.myTodoCounts = new ArrayList<>();
         this.currentUserId = currentUserId;
         this.listener = listener;
     }
 
     public void setProjects(List<Project> projects) {
-        this.projects = projects;
+        this.projects = new ArrayList<>(projects);
+        this.projectsFiltered = new ArrayList<>(projects);
         this.myTodoCounts = new ArrayList<>();
         // Khởi tạo myTodoCounts với giá trị 0, sẽ được update sau
         for (int i = 0; i < projects.size(); i++) {
             this.myTodoCounts.add(0);
         }
+        notifyDataSetChanged();
+    }
+
+    /**
+     * Filter projects by name or description
+     * @param query search query string
+     */
+    public void filter(String query) {
+        projectsFiltered.clear();
+
+        if (query == null || query.trim().isEmpty()) {
+            // No filter, show all
+            projectsFiltered.addAll(projects);
+        } else {
+            String lowerCaseQuery = query.toLowerCase().trim();
+            for (Project project : projects) {
+                // Filter by project name
+                if (project.getName() != null &&
+                    project.getName().toLowerCase().contains(lowerCaseQuery)) {
+                    projectsFiltered.add(project);
+                }
+                // Also filter by description
+                else if (project.getDescription() != null &&
+                         project.getDescription().toLowerCase().contains(lowerCaseQuery)) {
+                    projectsFiltered.add(project);
+                }
+            }
+        }
+
         notifyDataSetChanged();
     }
 
@@ -59,14 +91,19 @@ public class ProjectAdapter extends RecyclerView.Adapter<ProjectAdapter.ProjectV
 
     @Override
     public void onBindViewHolder(@NonNull ProjectViewHolder holder, int position) {
-        Project project = projects.get(position);
-        int myTodoCount = myTodoCounts.get(position);
+        Project project = projectsFiltered.get(position);
+
+        // Find original position in projects list to get correct todo count
+        int originalPosition = projects.indexOf(project);
+        int myTodoCount = originalPosition >= 0 && originalPosition < myTodoCounts.size()
+            ? myTodoCounts.get(originalPosition) : 0;
+
         holder.bind(project, myTodoCount, currentUserId);
     }
 
     @Override
     public int getItemCount() {
-        return projects.size();
+        return projectsFiltered.size();
     }
 
     class ProjectViewHolder extends RecyclerView.ViewHolder {

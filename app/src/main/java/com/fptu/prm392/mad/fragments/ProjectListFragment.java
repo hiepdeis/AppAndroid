@@ -30,7 +30,6 @@ import com.fptu.prm392.mad.repositories.ProjectRepository;
 import com.fptu.prm392.mad.repositories.TaskRepository;
 import com.google.firebase.auth.FirebaseAuth;
 
-import java.util.ArrayList;
 import java.util.List;
 
 public class ProjectListFragment extends Fragment {
@@ -95,6 +94,20 @@ public class ProjectListFragment extends Fragment {
         // Setup Join Project button click
         btnJoinProject.setOnClickListener(v -> {
             showSearchProjectsDialog();
+        });
+
+        // Setup search bar
+        searchBar.addTextChangedListener(new TextWatcher() {
+            @Override
+            public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
+
+            @Override
+            public void onTextChanged(CharSequence s, int start, int before, int count) {
+                projectAdapter.filter(s.toString());
+            }
+
+            @Override
+            public void afterTextChanged(Editable s) {}
         });
 
         loadProjects();
