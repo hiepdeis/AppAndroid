@@ -20,6 +20,7 @@ public class SelectedAssigneeAdapter extends RecyclerView.Adapter<SelectedAssign
     private List<ProjectMember> selectedMembers;
     private OnAssigneeRemoveListener removeListener;
     private OnAssigneeClickListener clickListener;
+    private boolean isCreator = false;
 
     public interface OnAssigneeRemoveListener {
         void onRemoveAssignee(ProjectMember member, int position);
@@ -27,6 +28,11 @@ public class SelectedAssigneeAdapter extends RecyclerView.Adapter<SelectedAssign
 
     public interface OnAssigneeClickListener {
         void onAssigneeClick(ProjectMember member);
+    }
+
+    public void setIsCreator(boolean isCreator) {
+        this.isCreator = isCreator;
+        notifyDataSetChanged();
     }
 
     public SelectedAssigneeAdapter(OnAssigneeRemoveListener removeListener) {
@@ -108,8 +114,8 @@ public class SelectedAssigneeAdapter extends RecyclerView.Adapter<SelectedAssign
                     : member.getEmail();
             tvAssigneeName.setText(displayName);
 
-            // Show/hide remove button based on listener
-            if (removeListener != null) {
+            // Show/hide remove button based on listener and isCreator
+            if (removeListener != null && isCreator) {
                 btnRemoveAssignee.setVisibility(View.VISIBLE);
                 btnRemoveAssignee.setOnClickListener(v -> {
                     removeListener.onRemoveAssignee(member, getAdapterPosition());

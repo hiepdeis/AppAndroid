@@ -326,5 +326,72 @@ public class TaskRepository {
                     onFailure.onFailure(e);
                 });
     }
+
+    // UPDATE: Thêm assignee vào task
+    public void addAssigneeToTask(String taskId, String userId,
+                                 OnSuccessListener<Void> onSuccess,
+                                 OnFailureListener onFailure) {
+        db.collection(COLLECTION_TASKS)
+                .document(taskId)
+                .get()
+                .addOnSuccessListener(documentSnapshot -> {
+                    Task task = documentSnapshot.toObject(Task.class);
+                    if (task != null) {
+                        List<String> assignees = task.getAssignees() != null
+                                ? new ArrayList<>(task.getAssignees())
+                                : new ArrayList<>();
+
+                        if (!assignees.contains(userId)) {
+                            assignees.add(userId);
+                            db.collection(COLLECTION_TASKS)
+                                    .document(taskId)
+                                    .update("assignees", assignees)
+                                    .addOnSuccessListener(aVoid -> {
+                                        Log.d(TAG, "Assignee added to task: " + taskId);
+                                        onSuccess.onSuccess(aVoid);
+                                    })
+                                    .addOnFailureListener(onFailure);
+                        } else {
+                            onSuccess.onSuccess(null);
+                        }
+                    } else {
+                        onFailure.onFailure(new Exception("Task not found"));
+                    }
+                })
+                .addOnFailureListener(onFailure);
+    }
+
+    // UPDATE: Xóa assignee khỏi task
+    public void removeAssigneeFromTask(String taskId, String userId,
+                                      OnSuccessListener<Void> onSuccess,
+                                      OnFailureListener onFailure) {
+        db.collection(COLLECTION_TASKS)
+                .document(taskId)
+                .get()
+                .addOnSuccessListener(documentSnapshot -> {
+                    Task task = documentSnapshot.toObject(Task.class);
+                    if (task != null) {
+                        List<String> assignees = task.getAssignees() != null
+                                ? new ArrayList<>(task.getAssignees())
+                                : new ArrayList<>();
+
+                        if (assignees.remove(userId)) {
+                            db.collection(COLLECTION_TASKS)
+                                    .document(taskId)
+                                    .update("assignees", assignees)
+                                    .addOnSuccessListener(aVoid -> {
+                                        Log.d(TAG, "Assignee removed from task: " + taskId);
+                                        onSuccess.onSuccess(aVoid);
+                                    })
+                                    .addOnFailureListener(onFailure);
+                        } else {
+                            onSuccess.onSuccess(null);
+                        }
+                    } else {
+                        onFailure.onFailure(new Exception("Task not found"));
+                    }
+                })
+                .addOnFailureListener(onFailure);
+    }
 }
 

@@ -208,6 +208,23 @@
                         android:textColor="#3498DB"
                         android:layout_marginStart="4dp" />
 
+                    <View
+                        android:layout_width="0dp"
+                        android:layout_height="0dp"
+                        android:layout_weight="1" />
+
+                    <!-- Add Assignee Button -->
+                    <ImageView
+                        android:id="@+id/btnAddAssignee"
+                        android:layout_width="32dp"
+                        android:layout_height="32dp"
+                        android:src="@drawable/add_people"
+                        android:padding="6dp"
+                        android:background="?attr/selectableItemBackgroundBorderless"
+                        android:clickable="true"
+                        android:focusable="true"
+                        android:contentDescription="Add Assignee" />
+
                 </LinearLayout>
 
                 <androidx.recyclerview.widget.RecyclerView

@@ -110,9 +110,14 @@ public class HomeActivity extends AppCompatActivity {
             }
         });
 
-        // Tự động chọn tab Project khi vào màn hình
-        bottomNavigationView.setSelectedItemId(R.id.nav_project);
-        showProjectsTab();
+        // Check if opened from Project/Task chat button
+        handleIncomingIntent();
+
+        // Tự động chọn tab Project khi vào màn hình (nếu không có intent đặc biệt)
+        if (!getIntent().hasExtra("OPEN_CHAT_ID")) {
+            bottomNavigationView.setSelectedItemId(R.id.nav_project);
+            showProjectsTab();
+        }
 
         // Xử lý sự kiện click bottom navigation
         bottomNavigationView.setOnItemSelectedListener(new BottomNavigationView.OnItemSelectedListener() {
@@ -161,6 +166,27 @@ public class HomeActivity extends AppCompatActivity {
                 startActivity(intent);
             }
         });
+    }
+
+    private void handleIncomingIntent() {
+        Intent intent = getIntent();
+        if (intent.hasExtra("OPEN_CHAT_ID")) {
+            String chatId = intent.getStringExtra("OPEN_CHAT_ID");
+            String chatName = intent.getStringExtra("CHAT_NAME");
+
+            // Switch to chat tab
+            bottomNavigationView.setSelectedItemId(R.id.nav_chat);
+            showChatTab();
+
+            // Open chat detail with the specific chat
+            if (chatId != null && chatName != null) {
+                // Create temporary Chat object
+                Chat chat = new Chat();
+                chat.setChatId(chatId);
+                chat.setProjectName(chatName);
+                openChatDetail(chat);
+            }
+        }
     }
 
     @Override

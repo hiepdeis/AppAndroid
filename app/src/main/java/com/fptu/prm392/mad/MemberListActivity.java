@@ -21,6 +21,7 @@ import com.fptu.prm392.mad.models.ProjectMember;
 import com.fptu.prm392.mad.models.User;
 import com.fptu.prm392.mad.repositories.ProjectRepository;
 import com.fptu.prm392.mad.repositories.UserRepository;
+import com.google.firebase.auth.FirebaseAuth;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -35,6 +36,8 @@ public class MemberListActivity extends AppCompatActivity {
     private UserRepository userRepository;
     private MemberAdapter memberAdapter;
     private String projectId;
+    private String projectOwnerId;
+    private String currentUserId;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -61,6 +64,10 @@ public class MemberListActivity extends AppCompatActivity {
         projectRepository = new ProjectRepository();
         userRepository = new UserRepository();
 
+        // Get current user ID
+        FirebaseAuth mAuth = FirebaseAuth.getInstance();
+        currentUserId = mAuth.getCurrentUser() != null ? mAuth.getCurrentUser().getUid() : "";
+
         // Initialize views
         btnBack = findViewById(R.id.btnBack);
         btnAddMember = findViewById(R.id.btnAddMember);
@@ -80,8 +87,33 @@ public class MemberListActivity extends AppCompatActivity {
         // Add member button
         btnAddMember.setOnClickListener(v -> showAddMemberDialog());
 
-        // Load members
-        loadProjectMembers();
+        // Load project info first to check ownership
+        loadProjectInfo();
+    }
+
+    private void loadProjectInfo() {
+        projectRepository.getProjectById(projectId,
+            project -> {
+                projectOwnerId = project.getCreatedBy();
+                updateUIBasedOnOwnership();
+                loadProjectMembers();
+            },
+            e -> {
+                Toast.makeText(this, "Error loading project: " + e.getMessage(),
+                    Toast.LENGTH_SHORT).show();
+                finish();
+            }
+        );
+    }
+
+    private void updateUIBasedOnOwnership() {
+        boolean isOwner = currentUserId.equals(projectOwnerId);
+
+        // Hiện/ẩn nút add member
+        btnAddMember.setVisibility(isOwner ? View.VISIBLE : View.GONE);
+
+        // Set listener cho adapter để enable/disable delete button
+        memberAdapter.setIsOwner(isOwner);
     }
 
     private void loadProjectMembers() {

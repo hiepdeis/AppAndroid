@@ -24,6 +24,7 @@ import com.fptu.prm392.mad.models.Project;
 import com.fptu.prm392.mad.models.ProjectMember;
 import com.fptu.prm392.mad.models.Task;
 import com.fptu.prm392.mad.models.User;
+import com.fptu.prm392.mad.repositories.ChatRepository;
 import com.fptu.prm392.mad.repositories.ProjectRepository;
 import com.fptu.prm392.mad.repositories.TaskRepository;
 import com.fptu.prm392.mad.repositories.UserRepository;
@@ -360,8 +361,35 @@ public class ProjectDetailActivity extends AppCompatActivity {
             return;
         }
 
-        // TODO: Implement chat feature in HomeActivity
-        Toast.makeText(this, "Chat feature will be available in Home screen", Toast.LENGTH_SHORT).show();
+        // Get all project member IDs
+        projectRepository.getProjectMembers(projectId,
+                members -> {
+                    List<String> memberIds = new ArrayList<>();
+                    for (ProjectMember member : members) {
+                        memberIds.add(member.getUserId());
+                    }
+
+                    // Create or get project chat
+                    ChatRepository chatRepository = new ChatRepository();
+                    chatRepository.getOrCreateProjectChat(
+                            projectId,
+                            currentProject.getName(),
+                            memberIds,
+                            chat -> {
+                                // Navigate to HomeActivity with chat tab
+                                Intent intent = new Intent(this, HomeActivity.class);
+                                intent.putExtra("OPEN_CHAT_ID", chat.getChatId());
+                                intent.putExtra("CHAT_NAME", chat.getProjectName());
+                                intent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
+                                startActivity(intent);
+                            },
+                            e -> Toast.makeText(this, "Error creating chat: " + e.getMessage(),
+                                    Toast.LENGTH_SHORT).show()
+                    );
+                },
+                e -> Toast.makeText(this, "Error loading members: " + e.getMessage(),
+                        Toast.LENGTH_SHORT).show()
+        );
     }
 
     private void openTaskDetail(Task task) {

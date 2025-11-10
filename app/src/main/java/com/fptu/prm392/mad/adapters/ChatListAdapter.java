@@ -8,6 +8,8 @@ import android.widget.TextView;
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
+import android.widget.ImageView;
+
 import com.fptu.prm392.mad.R;
 import com.fptu.prm392.mad.models.Chat;
 
@@ -30,6 +32,15 @@ public class ChatListAdapter extends RecyclerView.Adapter<ChatListAdapter.ChatVi
     public ChatListAdapter(OnChatClickListener listener) {
         this.chats = new ArrayList<>();
         this.listener = listener;
+    }
+
+    private boolean isOneOnOneChat(Chat chat) {
+        // Check if chat is 1-1:
+        // - participantIds size == 2
+        // - projectId == null (not a project/task chat)
+        return chat.getParticipantIds() != null
+                && chat.getParticipantIds().size() == 2
+                && chat.getProjectId() == null;
     }
 
     public void setChats(List<Chat> chats) {
@@ -57,10 +68,12 @@ public class ChatListAdapter extends RecyclerView.Adapter<ChatListAdapter.ChatVi
     }
 
     class ChatViewHolder extends RecyclerView.ViewHolder {
+        ImageView ivChatIcon;
         TextView tvProjectName, tvLastMessage, tvTime, tvUnreadCount;
 
         public ChatViewHolder(@NonNull View itemView) {
             super(itemView);
+            ivChatIcon = itemView.findViewById(R.id.ivChatIcon);
             tvProjectName = itemView.findViewById(R.id.tvProjectName);
             tvLastMessage = itemView.findViewById(R.id.tvLastMessage);
             tvTime = itemView.findViewById(R.id.tvTime);
@@ -68,6 +81,15 @@ public class ChatListAdapter extends RecyclerView.Adapter<ChatListAdapter.ChatVi
         }
 
         public void bind(Chat chat) {
+            // Set icon based on chat type
+            if (isOneOnOneChat(chat)) {
+                // Solo 1-1 chat: Use profile icon (temporary, will be replaced with avatar later)
+                ivChatIcon.setImageResource(R.drawable.profile);
+            } else {
+                // Group chat: Use group chat icon
+                ivChatIcon.setImageResource(R.drawable.group_chat_avatar);
+            }
+
             tvProjectName.setText(chat.getProjectName());
 
             // Display last message

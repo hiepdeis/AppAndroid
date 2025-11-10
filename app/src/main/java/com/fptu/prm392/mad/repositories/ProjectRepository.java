@@ -178,6 +178,36 @@ public class ProjectRepository {
             });
     }
 
+    // READ: Lấy tất cả projects trong hệ thống (cho tìm kiếm)
+    public void getAllProjects(OnSuccessListener<List<Project>> onSuccess,
+                              OnFailureListener onFailure) {
+        db.collection(COLLECTION_PROJECTS)
+            .get()
+            .addOnSuccessListener(queryDocumentSnapshots -> {
+                List<Project> projects = new ArrayList<>();
+                for (DocumentSnapshot doc : queryDocumentSnapshots) {
+                    Project project = doc.toObject(Project.class);
+                    if (project != null) {
+                        projects.add(project);
+                    }
+                }
+
+                // Sort by createdAt descending
+                projects.sort((p1, p2) -> {
+                    if (p1.getCreatedAt() == null) return 1;
+                    if (p2.getCreatedAt() == null) return -1;
+                    return p2.getCreatedAt().compareTo(p1.getCreatedAt());
+                });
+
+                Log.d(TAG, "Found " + projects.size() + " projects in system");
+                onSuccess.onSuccess(projects);
+            })
+            .addOnFailureListener(e -> {
+                Log.e(TAG, "Error getting all projects", e);
+                onFailure.onFailure(e);
+            });
+    }
+
     // UPDATE: Cập nhật thông tin project
     public void updateProject(String projectId, Map<String, Object> updates,
                              OnSuccessListener<Void> onSuccess,

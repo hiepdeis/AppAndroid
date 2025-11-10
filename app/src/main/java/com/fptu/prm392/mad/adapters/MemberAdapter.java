@@ -19,6 +19,7 @@ public class MemberAdapter extends RecyclerView.Adapter<MemberAdapter.MemberView
 
     private List<ProjectMember> members;
     private OnMemberActionListener listener;
+    private boolean isOwner = false;
 
     public interface OnMemberActionListener {
         void onDeleteMember(ProjectMember member, int position);
@@ -27,6 +28,11 @@ public class MemberAdapter extends RecyclerView.Adapter<MemberAdapter.MemberView
     public MemberAdapter(OnMemberActionListener listener) {
         this.members = new ArrayList<>();
         this.listener = listener;
+    }
+
+    public void setIsOwner(boolean isOwner) {
+        this.isOwner = isOwner;
+        notifyDataSetChanged();
     }
 
     public void setMembers(List<ProjectMember> members) {
@@ -89,25 +95,27 @@ public class MemberAdapter extends RecyclerView.Adapter<MemberAdapter.MemberView
 
             if ("owner".equals(role)) {
                 tvMemberRole.setBackgroundResource(R.drawable.bg_status_done); // Green
-                // Hide delete icon for owner but keep the space
+                // Always hide delete icon for owner
                 ivDeleteMember.setVisibility(View.INVISIBLE);
             } else if ("admin".equals(role)) {
                 tvMemberRole.setBackgroundResource(R.drawable.bg_status_in_progress); // Yellow
-                // Show delete icon for admin
-                ivDeleteMember.setVisibility(View.VISIBLE);
+                // Show delete icon only if current user is owner
+                ivDeleteMember.setVisibility(isOwner ? View.VISIBLE : View.INVISIBLE);
             } else {
                 tvMemberRole.setBackgroundResource(R.drawable.bg_status_todo); // Gray
-                // Show delete icon for member
-                ivDeleteMember.setVisibility(View.VISIBLE);
+                // Show delete icon only if current user is owner
+                ivDeleteMember.setVisibility(isOwner ? View.VISIBLE : View.INVISIBLE);
             }
 
-            // Delete click listener (only for non-owners)
-            if (!member.isOwner()) {
+            // Delete click listener (only for non-owners and if current user is owner)
+            if (!member.isOwner() && isOwner) {
                 ivDeleteMember.setOnClickListener(v -> {
                     if (listener != null) {
                         listener.onDeleteMember(member, getAdapterPosition());
                     }
                 });
+            } else {
+                ivDeleteMember.setOnClickListener(null);
             }
         }
 

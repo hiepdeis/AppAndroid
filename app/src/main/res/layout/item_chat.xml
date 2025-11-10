@@ -21,12 +21,13 @@
         android:padding="16dp"
         android:gravity="center_vertical">
 
-        <!-- Project Icon -->
+        <!-- Chat Icon (profile for 1-1, group icon for group) -->
         <ImageView
+            android:id="@+id/ivChatIcon"
             android:layout_width="48dp"
             android:layout_height="48dp"
-            android:src="@drawable/project"
-            android:contentDescription="Project icon"
+            android:src="@drawable/profile"
+            android:contentDescription="Chat icon"
             android:layout_marginEnd="12dp" />
 
         <!-- Chat Content -->

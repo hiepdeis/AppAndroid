@@ -75,15 +75,19 @@ public class CreateProjectActivity extends AppCompatActivity {
                 btnCreateProject.setEnabled(true);
 
                 Toast.makeText(CreateProjectActivity.this,
-                    "✅ Tạo project thành công!\nID: " + projectId,
-                    Toast.LENGTH_LONG).show();
+                    "Project created successfully!",
+                    Toast.LENGTH_SHORT).show();
 
-                // Xóa dữ liệu input
-                etProjectName.setText("");
-                etProjectDescription.setText("");
+                // Chuyển đến ProjectDetailActivity
+                android.content.Intent intent = new android.content.Intent(
+                    CreateProjectActivity.this,
+                    ProjectDetailActivity.class
+                );
+                intent.putExtra("PROJECT_ID", projectId);
+                startActivity(intent);
 
-                // Có thể chuyển sang màn hình khác hoặc đóng Activity
-                // finish();
+                // Đóng CreateProjectActivity
+                finish();
             },
 
             // Callback khi thất bại
