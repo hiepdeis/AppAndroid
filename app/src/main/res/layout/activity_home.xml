@@ -160,6 +160,44 @@
                     </LinearLayout>
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
+
+            <com.google.android.material.card.MaterialCardView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                app:cardCornerRadius="20dp"
+                app:cardElevation="4dp"
+                app:cardBackgroundColor="#FFFFFF"
+                android:layout_marginTop="20dp"> <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="20dp">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Lịch làm việc của bạn"
+                    android:textColor="#212121"
+                    android:textSize="18sp"
+                    android:textStyle="bold"
+                    android:layout_marginBottom="12dp" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnViewCalendar"
+                    style="@style/Widget.MaterialComponents.Button"
+                    android:layout_width="match_parent"
+                    android:layout_height="50dp"
+                    android:text="📅  Xem Calendar (Tất cả Task)"
+                    android:textAllCaps="false"
+                    android:textStyle="bold"
+                    android:textSize="16sp"
+                    app:cornerRadius="12dp"
+                    app:backgroundTint="#4A90E2"
+                    android:textColor="#FFFFFF"/>
+            </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+
+
         </LinearLayout>
     </androidx.core.widget.NestedScrollView>
 

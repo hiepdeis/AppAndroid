@@ -15,7 +15,13 @@ import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.FirebaseFirestore;
-
+import com.fptu.prm392.mad.Domains.Tasks.Activities.CalendarActivity;
+import com.fptu.prm392.mad.Domains.Projects.Activities.ProjectDetailActivity;
+import com.fptu.prm392.mad.Domains.Projects.Models.Project;
+import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.auth.FirebaseUser;
+import com.google.firebase.firestore.DocumentSnapshot;
+import com.google.firebase.firestore.FirebaseFirestore;
 public class HomeActivity extends AppCompatActivity {
 
     private FirebaseAuth mAuth;
@@ -24,7 +30,7 @@ public class HomeActivity extends AppCompatActivity {
     private TextView tvWelcome;
     private Button btnLogout, btnCreateProject, btnViewProjectDetail, btnViewTask;
     private EditText etProjectName;
-
+    private Button btnViewCalendar;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -83,6 +89,24 @@ public class HomeActivity extends AppCompatActivity {
                 Toast.makeText(this, "Vui lòng nhập tên hoặc ID project", Toast.LENGTH_SHORT).show();
             } else {
                 openTaskListByQuery(queryText);
+            }
+        });
+
+        // ================= view calendar tasks =================
+        btnViewCalendar.setOnClickListener(v -> {
+            FirebaseUser user = mAuth.getCurrentUser();
+            if (user != null) {
+                // Lấy UID để truy vấn task
+                String userId = user.getUid();
+
+                Intent intent = new Intent(HomeActivity.this, CalendarActivity.class);
+
+                // Gửi userId sang màn hình Calendar (như luồng đã thống nhất)
+                intent.putExtra("USER_ID", userId);
+                startActivity(intent);
+            } else {
+                Toast.makeText(HomeActivity.this, "Lỗi: Không tìm thấy người dùng", Toast.LENGTH_SHORT).show();
+                navigateToLogin();
             }
         });
     }
@@ -177,6 +201,13 @@ public class HomeActivity extends AppCompatActivity {
         Intent intent = new Intent(HomeActivity.this, TaskListActivity.class);
         intent.putExtra("projectId", projectId);
         startActivity(intent);
+    }
+
+
+    private void openTaskviews(String projectId) {
+
+        // Tạm thời toast
+        Toast.makeText(this, "Mở Task List cho project: " + projectId, Toast.LENGTH_SHORT).show();
     }
 
 }

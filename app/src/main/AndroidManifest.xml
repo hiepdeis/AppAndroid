@@ -13,6 +13,9 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.MyApplicationDemo.NoActionBar">
         <activity
+            android:name=".Domains.Tasks.Activities.CalendarActivity"
+            android:exported="false" />
+        <activity
             android:name=".TaskListActivity"
             android:exported="false" />
         <activity
