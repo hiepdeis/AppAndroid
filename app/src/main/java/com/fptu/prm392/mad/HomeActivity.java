@@ -11,7 +11,7 @@ import android.widget.LinearLayout;
 import android.widget.ScrollView;
 import android.widget.TextView;
 import android.widget.Toast;
-import android.net.Uri;
+
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.fragment.app.FragmentTransaction;
@@ -20,7 +20,6 @@ import com.fptu.prm392.mad.fragments.ChatDetailFragment;
 import com.fptu.prm392.mad.fragments.ChatListFragment;
 import com.fptu.prm392.mad.fragments.ProjectListFragment;
 import com.fptu.prm392.mad.fragments.TaskListFragment;
-
 import com.fptu.prm392.mad.models.Chat;
 import com.fptu.prm392.mad.models.Project;
 import com.fptu.prm392.mad.models.Task;
@@ -29,16 +28,6 @@ import com.google.android.material.bottomnavigation.BottomNavigationView;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 
-import androidx.activity.result.ActivityResultLauncher;
-import androidx.activity.result.contract.ActivityResultContracts;
-import androidx.appcompat.app.AlertDialog;
-
-import com.bumptech.glide.Glide; // Import Glide
-import com.cloudinary.android.MediaManager;
-import com.cloudinary.android.callback.ErrorInfo;
-import com.cloudinary.android.callback.UploadCallback;
-
-import java.util.Map;
 
 public class HomeActivity extends AppCompatActivity {
 
@@ -59,16 +48,10 @@ public class HomeActivity extends AppCompatActivity {
     private ChatListFragment chatListFragment;
     private ChatDetailFragment chatDetailFragment;
 
-
     // Repositories
     private UserRepository userRepository;
 
     private TextView tvTabMessage;
-
-    private ImageView ivProfileAvatar; // Khai báo ở đây để dễ truy cập
-
-    // ActivityResultLauncher để xử lý kết quả chọn ảnh
-    private ActivityResultLauncher<Intent> imagePickerLauncher;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -149,8 +132,7 @@ public class HomeActivity extends AppCompatActivity {
                     showTaskTab();
                     return true;
                 } else if (itemId == R.id.nav_calendar) {
-                  //  showOtherTab("Calendar");
-                    showCalendarTab();
+                    showOtherTab("Calendar");
                     return true;
                 } else if (itemId == R.id.nav_chat) {
                     showChatTab();
@@ -184,19 +166,6 @@ public class HomeActivity extends AppCompatActivity {
                 startActivity(intent);
             }
         });
-
-        imagePickerLauncher = registerForActivityResult(
-                new ActivityResultContracts.StartActivityForResult(),
-                result -> {
-                    if (result.getResultCode() == RESULT_OK && result.getData() != null) {
-                        Uri selectedImageUri = result.getData().getData();
-                        if (selectedImageUri != null) {
-                            // Hiển thị popup xác nhận
-                            showUploadConfirmation(selectedImageUri);
-                        }
-                    }
-                }
-        );
     }
 
     private void handleIncomingIntent() {
@@ -229,17 +198,7 @@ public class HomeActivity extends AppCompatActivity {
         }
     }
 
-    private void showCalendarTab() {
-        projectFragmentContainer.setVisibility(View.GONE);
-        taskFragmentContainer.setVisibility(View.GONE);
-        chatFragmentContainer.setVisibility(View.GONE);
-        otherTabsContainer.setVisibility(View.GONE);  // ẩn container text tạm
-        profileContainer.setVisibility(View.GONE);
-        fabCreateProject.setVisibility(View.GONE);
-        contentArea.setBackgroundResource(R.drawable.img_3); // Hoặc màu/ảnh nền bạn muốn
 
-
-    }
 
     private void showProjectsTab() {
         projectFragmentContainer.setVisibility(View.VISIBLE);
@@ -312,23 +271,16 @@ public class HomeActivity extends AppCompatActivity {
 
 
         // Find profile views
-        ivProfileAvatar = findViewById(R.id.ivProfileAvatar); // Gán biến toàn cục
-
+        ImageView ivProfileAvatar = findViewById(R.id.ivProfileAvatar);
         TextView tvProfileFullname = findViewById(R.id.tvProfileFullname);
         TextView tvProfileEmail = findViewById(R.id.tvProfileEmail);
         Button btnProfileSignOut = findViewById(R.id.btnProfileSignOut);
-        // GÁN SỰ KIỆN CLICK CHO ẢNH ĐẠI DIỆN
-        ivProfileAvatar.setOnClickListener(v -> openImagePicker());
 
         // Setup sign out button
         btnProfileSignOut.setOnClickListener(v -> showSignOutConfirmation());
 
         userRepository.getUserById(currentUserId,
             user -> {
-                if (user == null) {
-                    Toast.makeText(this, "Could not load user data.", Toast.LENGTH_SHORT).show();
-                    return;
-                }
                 // Display user info
                 if (user.getFullname() != null && !user.getFullname().isEmpty()) {
                     tvProfileFullname.setText(user.getFullname());
@@ -337,29 +289,6 @@ public class HomeActivity extends AppCompatActivity {
                 }
 
                 tvProfileEmail.setText(user.getEmail());
-                // Hiển thị tên và email
-                if (user.getFullname() != null && !user.getFullname().isEmpty()) {
-                    tvProfileFullname.setText(user.getFullname());
-                } else {
-                    tvProfileFullname.setText("No name");
-                }
-                tvProfileEmail.setText(user.getEmail());
-
-                // HIỂN THỊ ẢNH ĐẠI DIỆN BẰNG GLIDE
-                if (user.getAvatar() != null && !user.getAvatar().isEmpty()) {
-                    Glide.with(this)
-                            .load(user.getAvatar())
-                            .circleCrop()
-                            .placeholder(R.drawable.add_people) // << Thay bằng ảnh mặc định của bạn
-                            .error(R.drawable.add_people)       // << Thay bằng ảnh mặc định của bạn
-                            .into(ivProfileAvatar);
-                } else {
-                    // Nếu không có URL, hiển thị ảnh mặc định
-                    Glide.with(this)
-                            .load(R.drawable.add_people) // << Thay bằng ảnh mặc định của bạn
-                            .circleCrop()
-                            .into(ivProfileAvatar);
-                }
             },
             e -> {
                 Toast.makeText(this, "Error loading profile: " + e.getMessage(),
@@ -431,81 +360,5 @@ public class HomeActivity extends AppCompatActivity {
         startActivity(intent);
         finish();
     }
-    private void openImagePicker() {
-        Intent intent = new Intent(Intent.ACTION_PICK);
-        intent.setType("image/*");
-        imagePickerLauncher.launch(intent);
-    }
 
-    private void showUploadConfirmation(Uri imageUri) {
-        ImageView previewImage = new ImageView(this);
-        previewImage.setImageURI(imageUri);
-        LinearLayout.LayoutParams layoutParams = new LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.MATCH_PARENT, 600
-        );
-        int margin = (int) (16 * getResources().getDisplayMetrics().density);
-        layoutParams.setMargins(margin, margin, margin, margin);
-        previewImage.setLayoutParams(layoutParams);
-        previewImage.setScaleType(ImageView.ScaleType.CENTER_CROP);
-
-        new AlertDialog.Builder(this)
-                .setTitle("Confirm Upload")
-                .setMessage("Do you want to set this image as your profile picture?")
-                .setView(previewImage)
-                .setPositiveButton("Accept", (dialog, which) -> uploadImageToCloudinary(imageUri))
-                .setNegativeButton("Cancel", null)
-                .show();
-    }
-
-    private void uploadImageToCloudinary(Uri imageUri) {
-        Toast.makeText(HomeActivity.this, "Uploading...", Toast.LENGTH_SHORT).show();
-        MediaManager.get().upload(imageUri)
-                .unsigned("my_unsigned_preset") // << QUAN TRỌNG: Thay bằng upload preset của bạn
-                .callback(new UploadCallback() {
-                    @Override
-                    public void onStart(String requestId) {
-                        // Đã có Toast ở trên
-                    }
-
-                    @Override
-                    public void onProgress(String requestId, long bytes, long totalBytes) { }
-
-                    @Override
-                    public void onSuccess(String requestId, Map resultData) {
-                        String imageUrl = (String) resultData.get("secure_url");
-                        if (imageUrl != null) {
-                            Toast.makeText(HomeActivity.this, "Upload successful!", Toast.LENGTH_SHORT).show();
-                            saveImageUrlToFirebase(imageUrl);
-                        } else {
-                            Toast.makeText(HomeActivity.this, "Upload failed: URL is null.", Toast.LENGTH_LONG).show();
-                        }
-                    }
-
-                    @Override
-                    public void onError(String requestId, ErrorInfo error) {
-                        Toast.makeText(HomeActivity.this, "Upload failed: " + error.getDescription(), Toast.LENGTH_LONG).show();
-                    }
-
-                    @Override
-                    public void onReschedule(String requestId, ErrorInfo error) { }
-                }).dispatch();
-    }
-
-    private void saveImageUrlToFirebase(String imageUrl) {
-        String currentUserId = mAuth.getCurrentUser().getUid();
-        userRepository.updateUserAvatar(currentUserId, imageUrl,
-                aVoid -> {
-                    // Cập nhật lại ảnh đại diện ngay lập tức
-                    if (ivProfileAvatar != null) {
-                        Glide.with(HomeActivity.this)
-                                .load(imageUrl)
-                                .circleCrop()
-                                .placeholder(R.drawable.add_people)
-                                .into(ivProfileAvatar);
-                    }
-                    Toast.makeText(this, "Profile picture updated.", Toast.LENGTH_SHORT).show();
-                },
-                e -> Toast.makeText(this, "Failed to update profile: " + e.getMessage(), Toast.LENGTH_SHORT).show()
-        );
-    }
 }
