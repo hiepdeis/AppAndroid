@@ -140,7 +140,7 @@ public class MemberListActivity extends AppCompatActivity {
 
         // Setup RecyclerView
         rvUsers.setLayoutManager(new LinearLayoutManager(this));
-        AddUserAdapter addUserAdapter = new AddUserAdapter(user -> {
+        AddUserAdapter addUserAdapter = new AddUserAdapter((AddUserAdapter.OnAddUserListener) user -> {
             addMemberToProject(user, addDialog);
         });
         rvUsers.setAdapter(addUserAdapter);

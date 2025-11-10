@@ -3,15 +3,13 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:orientation="vertical"
-    android:background="@drawable/img_3"
-    android:fitsSystemWindows="true">
+    android:orientation="vertical">
 
-    <!-- Header -->
+    <!-- Chat Detail Header -->
     <com.google.android.material.card.MaterialCardView
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        app:cardCornerRadius="0dp"
+        app:cardCornerRadius="20dp"
         app:cardElevation="4dp">
 
         <LinearLayout
@@ -23,7 +21,7 @@
             android:background="@android:color/white">
 
             <ImageView
-                android:id="@+id/btnBack"
+                android:id="@+id/btnBackToChats"
                 android:layout_width="40dp"
                 android:layout_height="40dp"
                 android:src="@drawable/back"
@@ -31,14 +29,14 @@
                 android:background="?attr/selectableItemBackgroundBorderless"
                 android:clickable="true"
                 android:focusable="true"
-                android:contentDescription="Back" />
+                android:contentDescription="@string/back_to_chats" />
 
             <TextView
-                android:id="@+id/tvProjectName"
+                android:id="@+id/tvChatDetailProjectName"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
-                android:text="Project Chat"
+                android:text="@string/project_chat"
                 android:textSize="20sp"
                 android:textStyle="bold"
                 android:textColor="#1A1A1A"
@@ -50,7 +48,7 @@
 
     </com.google.android.material.card.MaterialCardView>
 
-    <!-- Messages List -->
+    <!-- Messages RecyclerView -->
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/recyclerViewMessages"
         android:layout_width="match_parent"
@@ -70,21 +68,22 @@
         android:gravity="center_vertical">
 
         <EditText
-            android:id="@+id/etMessage"
+            android:id="@+id/etMessageInput"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
-            android:hint="Type a message..."
+            android:hint="@string/type_message"
             android:background="@drawable/bg_message_input"
             android:padding="12dp"
             android:maxLines="4"
             android:inputType="textMultiLine|textCapSentences"
             android:textSize="15sp"
             android:textColor="#1A1A1A"
-            android:textColorHint="#9E9E9E" />
+            android:textColorHint="#9E9E9E"
+            android:autofillHints="" />
 
         <ImageView
-            android:id="@+id/btnSend"
+            android:id="@+id/btnSendMessage"
             android:layout_width="48dp"
             android:layout_height="48dp"
             android:src="@drawable/send"
@@ -93,7 +92,7 @@
             android:background="@drawable/bg_send_button"
             android:clickable="true"
             android:focusable="true"
-            android:contentDescription="Send" />
+            android:contentDescription="@string/send" />
 
     </LinearLayout>
 

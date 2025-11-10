@@ -10,8 +10,6 @@ import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.FirebaseFirestore;
-import com.google.firebase.firestore.Query;
-import com.google.firebase.firestore.QuerySnapshot;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -74,7 +72,7 @@ public class UserRepository {
     // READ: Lấy tất cả users
     public void getAllUsers(OnSuccessListener<List<User>> onSuccess, OnFailureListener onFailure) {
         db.collection(COLLECTION_USERS)
-            .orderBy("fullname", Query.Direction.ASCENDING)
+            // Không dùng orderBy để tránh lỗi index, sẽ sort ở client side
             .get()
             .addOnSuccessListener(queryDocumentSnapshots -> {
                 List<User> users = new ArrayList<>();
@@ -85,6 +83,14 @@ public class UserRepository {
                         users.add(user);
                     }
                 }
+
+                // Sort by fullname ở client side
+                users.sort((u1, u2) -> {
+                    String name1 = u1.getFullname() != null ? u1.getFullname().toLowerCase() : "";
+                    String name2 = u2.getFullname() != null ? u2.getFullname().toLowerCase() : "";
+                    return name1.compareTo(name2);
+                });
+
                 Log.d(TAG, "Found " + users.size() + " users");
                 onSuccess.onSuccess(users);
             })

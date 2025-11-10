@@ -360,25 +360,8 @@ public class ProjectDetailActivity extends AppCompatActivity {
             return;
         }
 
-        // Get or create chat for this project
-        com.fptu.prm392.mad.repositories.ChatRepository chatRepository = new com.fptu.prm392.mad.repositories.ChatRepository();
-
-        chatRepository.getOrCreateProjectChat(
-                projectId,
-                currentProject.getName(),
-                currentProject.getMemberIds(),
-                chat -> {
-                    // Open chat detail
-                    Intent intent = new Intent(this, ChatDetailActivity.class);
-                    intent.putExtra("CHAT_ID", chat.getChatId());
-                    intent.putExtra("PROJECT_NAME", currentProject.getName());
-                    startActivity(intent);
-                },
-                e -> {
-                    Toast.makeText(this, "Error opening chat: " + e.getMessage(),
-                            Toast.LENGTH_SHORT).show();
-                }
-        );
+        // TODO: Implement chat feature in HomeActivity
+        Toast.makeText(this, "Chat feature will be available in Home screen", Toast.LENGTH_SHORT).show();
     }
 
     private void openTaskDetail(Task task) {
@@ -488,7 +471,7 @@ public class ProjectDetailActivity extends AppCompatActivity {
 
         // Setup RecyclerView
         rvUsers.setLayoutManager(new LinearLayoutManager(this));
-        AddUserAdapter addUserAdapter = new AddUserAdapter(user -> {
+        AddUserAdapter addUserAdapter = new AddUserAdapter((AddUserAdapter.OnAddUserListener) user -> {
             // Add user to project
             addMemberToProject(user, addDialog, parentDialog);
         });

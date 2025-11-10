@@ -5,7 +5,6 @@ import android.os.Bundle;
 import android.view.MenuItem;
 import android.view.View;
 import android.widget.Button;
-import android.widget.EditText;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
@@ -15,20 +14,20 @@ import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
-import androidx.recyclerview.widget.LinearLayoutManager;
-import androidx.recyclerview.widget.RecyclerView;
+import androidx.fragment.app.FragmentTransaction;
 
-import com.fptu.prm392.mad.adapters.ProjectAdapter;
-import com.fptu.prm392.mad.adapters.TaskListAdapter;
+import com.fptu.prm392.mad.fragments.ChatDetailFragment;
+import com.fptu.prm392.mad.fragments.ChatListFragment;
+import com.fptu.prm392.mad.fragments.ProjectListFragment;
+import com.fptu.prm392.mad.fragments.TaskListFragment;
+import com.fptu.prm392.mad.models.Chat;
 import com.fptu.prm392.mad.models.Project;
-import com.fptu.prm392.mad.repositories.ProjectRepository;
-import com.fptu.prm392.mad.repositories.TaskRepository;
+import com.fptu.prm392.mad.models.Task;
 import com.fptu.prm392.mad.repositories.UserRepository;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 
-import java.util.List;
 
 public class HomeActivity extends AppCompatActivity {
 
@@ -39,21 +38,18 @@ public class HomeActivity extends AppCompatActivity {
 
     // Containers
     private FrameLayout contentArea;
-    private LinearLayout projectsContainer, taskContainer, otherTabsContainer, emptyState, emptyStateTask;
+    private FrameLayout projectFragmentContainer, taskFragmentContainer, chatFragmentContainer;
+    private LinearLayout otherTabsContainer;
     private ScrollView profileContainer;
 
-    // Projects tab
-    private RecyclerView recyclerViewProjects;
-    private ProjectAdapter projectAdapter;
-    private EditText searchBar;
-
-    // Tasks tab
-    private RecyclerView recyclerViewTasks;
-    private TaskListAdapter taskListAdapter;
+    // Fragments
+    private ProjectListFragment projectListFragment;
+    private TaskListFragment taskListFragment;
+    private ChatListFragment chatListFragment;
+    private ChatDetailFragment chatDetailFragment;
 
     // Repositories
-    private ProjectRepository projectRepository;
-    private TaskRepository taskRepository;
+    private UserRepository userRepository;
 
     private TextView tvTabMessage;
 
@@ -63,24 +59,20 @@ public class HomeActivity extends AppCompatActivity {
         setContentView(R.layout.activity_home);
 
         mAuth = FirebaseAuth.getInstance();
-        projectRepository = new ProjectRepository();
-        taskRepository = new TaskRepository();
+        userRepository = new UserRepository();
 
         // Initialize views
         btnLogout = findViewById(R.id.btnLogout);
         fabCreateProject = findViewById(R.id.fabCreateProject);
         bottomNavigationView = findViewById(R.id.bottomNavigationView);
         contentArea = findViewById(R.id.contentArea);
-        projectsContainer = findViewById(R.id.projectsContainer);
-        taskContainer = findViewById(R.id.taskContainer);
+        projectFragmentContainer = findViewById(R.id.projectFragmentContainer);
+        taskFragmentContainer = findViewById(R.id.taskFragmentContainer);
+        chatFragmentContainer = findViewById(R.id.chatFragmentContainer);
         otherTabsContainer = findViewById(R.id.otherTabsContainer);
         profileContainer = findViewById(R.id.profileContainer);
-        emptyState = findViewById(R.id.emptyState);
-        emptyStateTask = findViewById(R.id.emptyStateTask);
-        recyclerViewProjects = findViewById(R.id.recyclerViewProjects);
-        recyclerViewTasks = findViewById(R.id.recyclerViewTasks);
         tvTabMessage = findViewById(R.id.tvTabMessage);
-        searchBar = findViewById(R.id.searchBar);
+
 
         // Force disable icon tint để hiển thị màu gốc của PNG
         bottomNavigationView.setItemIconTintList(null);
@@ -92,27 +84,31 @@ public class HomeActivity extends AppCompatActivity {
             return;
         }
 
-        String currentUserId = currentUser.getUid();
+        // Initialize fragments
+        projectListFragment = ProjectListFragment.newInstance();
+        projectListFragment.setOnProjectClickListener(this::openProjectDetail);
 
-        // Setup RecyclerView for Projects
-        recyclerViewProjects.setLayoutManager(new LinearLayoutManager(this));
-        projectAdapter = new ProjectAdapter(currentUserId, project -> {
-            // Mở chi tiết project
-            Intent intent = new Intent(HomeActivity.this, ProjectDetailActivity.class);
-            intent.putExtra("PROJECT_ID", project.getProjectId());
-            startActivity(intent);
-        });
-        recyclerViewProjects.setAdapter(projectAdapter);
+        taskListFragment = TaskListFragment.newInstance();
+        taskListFragment.setOnTaskClickListener(this::openTaskDetail);
 
-        // Setup RecyclerView for Tasks
-        recyclerViewTasks.setLayoutManager(new LinearLayoutManager(this));
-        taskListAdapter = new TaskListAdapter(task -> {
-            // Open task detail
-            Intent intent = new Intent(HomeActivity.this, TaskDetailActivity.class);
-            intent.putExtra("TASK_ID", task.getTaskId());
-            startActivity(intent);
+        chatListFragment = ChatListFragment.newInstance();
+        chatListFragment.setOnChatClickListener(this::openChatDetail);
+
+        // Xử lý back button
+        getOnBackPressedDispatcher().addCallback(this, new androidx.activity.OnBackPressedCallback(true) {
+            @Override
+            public void handleOnBackPressed() {
+                // Nếu đang ở chat detail (có fragment trong back stack), hiện lại bottom nav
+                if (getSupportFragmentManager().getBackStackEntryCount() > 0) {
+                    bottomNavigationView.setVisibility(View.VISIBLE);
+                    getSupportFragmentManager().popBackStack();
+                } else {
+                    // Cho phép back mặc định (thoát app)
+                    setEnabled(false);
+                    getOnBackPressedDispatcher().onBackPressed();
+                }
+            }
         });
-        recyclerViewTasks.setAdapter(taskListAdapter);
 
         // Tự động chọn tab Project khi vào màn hình
         bottomNavigationView.setSelectedItemId(R.id.nav_project);
@@ -134,7 +130,7 @@ public class HomeActivity extends AppCompatActivity {
                     showOtherTab("Calendar");
                     return true;
                 } else if (itemId == R.id.nav_chat) {
-                    openChatList();
+                    showChatTab();
                     return true;
                 } else if (itemId == R.id.nav_notification) {
                     showOtherTab("Notifications");
@@ -170,37 +166,48 @@ public class HomeActivity extends AppCompatActivity {
     @Override
     protected void onResume() {
         super.onResume();
-        // Refresh projects list khi quay lại activity
-        if (projectsContainer.getVisibility() == View.VISIBLE) {
-            loadProjects();
-        } else if (profileContainer.getVisibility() == View.VISIBLE) {
+        // Fragments handle their own refresh
+        if (profileContainer.getVisibility() == View.VISIBLE) {
             loadUserProfile();
         }
     }
 
+
+
     private void showProjectsTab() {
-        projectsContainer.setVisibility(View.VISIBLE);
-        taskContainer.setVisibility(View.GONE);
+        projectFragmentContainer.setVisibility(View.VISIBLE);
+        taskFragmentContainer.setVisibility(View.GONE);
+        chatFragmentContainer.setVisibility(View.GONE);
         otherTabsContainer.setVisibility(View.GONE);
         profileContainer.setVisibility(View.GONE);
         fabCreateProject.setVisibility(View.VISIBLE);
         contentArea.setBackgroundResource(R.drawable.img_3);
-        loadProjects();
+
+        // Load project list fragment
+        FragmentTransaction transaction = getSupportFragmentManager().beginTransaction();
+        transaction.replace(R.id.projectFragmentContainer, projectListFragment);
+        transaction.commit();
     }
 
     private void showTaskTab() {
-        projectsContainer.setVisibility(View.GONE);
-        taskContainer.setVisibility(View.VISIBLE);
+        projectFragmentContainer.setVisibility(View.GONE);
+        taskFragmentContainer.setVisibility(View.VISIBLE);
+        chatFragmentContainer.setVisibility(View.GONE);
         otherTabsContainer.setVisibility(View.GONE);
         profileContainer.setVisibility(View.GONE);
         fabCreateProject.setVisibility(View.GONE);
         contentArea.setBackgroundResource(R.drawable.img_2);
-        loadTasks();
+
+        // Load task list fragment
+        FragmentTransaction transaction = getSupportFragmentManager().beginTransaction();
+        transaction.replace(R.id.taskFragmentContainer, taskListFragment);
+        transaction.commit();
     }
 
     private void showOtherTab(String tabName) {
-        projectsContainer.setVisibility(View.GONE);
-        taskContainer.setVisibility(View.GONE);
+        projectFragmentContainer.setVisibility(View.GONE);
+        taskFragmentContainer.setVisibility(View.GONE);
+        chatFragmentContainer.setVisibility(View.GONE);
         otherTabsContainer.setVisibility(View.VISIBLE);
         profileContainer.setVisibility(View.GONE);
         fabCreateProject.setVisibility(View.GONE);
@@ -209,8 +216,9 @@ public class HomeActivity extends AppCompatActivity {
     }
 
     private void showProfileTab() {
-        projectsContainer.setVisibility(View.GONE);
-        taskContainer.setVisibility(View.GONE);
+        projectFragmentContainer.setVisibility(View.GONE);
+        taskFragmentContainer.setVisibility(View.GONE);
+        chatFragmentContainer.setVisibility(View.GONE);
         otherTabsContainer.setVisibility(View.GONE);
         profileContainer.setVisibility(View.VISIBLE);
         fabCreateProject.setVisibility(View.GONE);
@@ -218,72 +226,23 @@ public class HomeActivity extends AppCompatActivity {
         loadUserProfile();
     }
 
-    private void loadProjects() {
-        projectRepository.getMyProjects(
-            projects -> {
-                if (projects.isEmpty()) {
-                    emptyState.setVisibility(View.VISIBLE);
-                    recyclerViewProjects.setVisibility(View.GONE);
-                } else {
-                    emptyState.setVisibility(View.GONE);
-                    recyclerViewProjects.setVisibility(View.VISIBLE);
-                    projectAdapter.setProjects(projects);
-
-                    // Load todo count cho từng project
-                    loadTodoCountsForProjects(projects);
-                }
-            },
-            e -> {
-                Toast.makeText(this, "Error loading projects: " + e.getMessage(),
-                    Toast.LENGTH_SHORT).show();
-            }
-        );
+    private void openProjectDetail(Project project) {
+        Intent intent = new Intent(this, ProjectDetailActivity.class);
+        intent.putExtra("PROJECT_ID", project.getProjectId());
+        startActivity(intent);
     }
 
-    private void loadTodoCountsForProjects(List<Project> projects) {
-        String currentUserId = mAuth.getCurrentUser().getUid();
-
-        for (int i = 0; i < projects.size(); i++) {
-            final int position = i;
-            Project project = projects.get(i);
-
-            taskRepository.countMyPendingTasksInProject(
-                project.getProjectId(),
-                currentUserId,
-                count -> {
-                    projectAdapter.updateMyTodoCount(position, count);
-                },
-                e -> {
-                    // Ignore error, giữ count = 0
-                }
-            );
-        }
-    }
-
-    private void loadTasks() {
-        taskRepository.getMyTasks(
-            tasks -> {
-                if (tasks.isEmpty()) {
-                    emptyStateTask.setVisibility(View.VISIBLE);
-                    recyclerViewTasks.setVisibility(View.GONE);
-                } else {
-                    emptyStateTask.setVisibility(View.GONE);
-                    recyclerViewTasks.setVisibility(View.VISIBLE);
-                    // Display tasks sorted by due date
-                    taskListAdapter.setTasks(tasks);
-                }
-            },
-            e -> {
-                Toast.makeText(this, "Error loading tasks: " + e.getMessage(),
-                    Toast.LENGTH_SHORT).show();
-            }
-        );
+    private void openTaskDetail(Task task) {
+        Intent intent = new Intent(this, TaskDetailActivity.class);
+        intent.putExtra("TASK_ID", task.getTaskId());
+        startActivity(intent);
     }
 
     private void loadUserProfile() {
+        if (mAuth.getCurrentUser() == null) return;
+
         String currentUserId = mAuth.getCurrentUser().getUid();
 
-        UserRepository userRepository = new UserRepository();
 
         // Find profile views
         ImageView ivProfileAvatar = findViewById(R.id.ivProfileAvatar);
@@ -333,9 +292,40 @@ public class HomeActivity extends AppCompatActivity {
         Toast.makeText(this, "Signed out successfully", Toast.LENGTH_SHORT).show();
     }
 
-    private void openChatList() {
-        Intent intent = new Intent(HomeActivity.this, ChatListActivity.class);
-        startActivity(intent);
+    private void showChatTab() {
+        projectFragmentContainer.setVisibility(View.GONE);
+        taskFragmentContainer.setVisibility(View.GONE);
+        chatFragmentContainer.setVisibility(View.VISIBLE);
+        otherTabsContainer.setVisibility(View.GONE);
+        profileContainer.setVisibility(View.GONE);
+        fabCreateProject.setVisibility(View.GONE);
+        contentArea.setBackgroundResource(R.drawable.chat_background);
+
+        // Show chat list fragment
+        showChatListFragment();
+    }
+
+    private void showChatListFragment() {
+        FragmentTransaction transaction = getSupportFragmentManager().beginTransaction();
+        transaction.replace(R.id.chatFragmentContainer, chatListFragment);
+        transaction.commit();
+
+        // Hiện lại bottom nav bar
+        bottomNavigationView.setVisibility(View.VISIBLE);
+    }
+
+    private void openChatDetail(Chat chat) {
+        // Create and show chat detail fragment
+        chatDetailFragment = ChatDetailFragment.newInstance(chat.getChatId(), chat.getProjectName());
+        chatDetailFragment.setOnBackToChatsListener(this::showChatListFragment);
+
+        FragmentTransaction transaction = getSupportFragmentManager().beginTransaction();
+        transaction.replace(R.id.chatFragmentContainer, chatDetailFragment);
+        transaction.addToBackStack(null);
+        transaction.commit();
+
+        // Ẩn bottom nav bar khi vào chat detail
+        bottomNavigationView.setVisibility(View.GONE);
     }
 
     private void navigateToLogin() {
@@ -344,4 +334,5 @@ public class HomeActivity extends AppCompatActivity {
         startActivity(intent);
         finish();
     }
+
 }

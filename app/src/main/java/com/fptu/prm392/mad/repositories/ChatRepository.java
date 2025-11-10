@@ -11,7 +11,6 @@ import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.ListenerRegistration;
-import com.google.firebase.firestore.Query;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -29,6 +28,72 @@ public class ChatRepository {
     public ChatRepository() {
         this.db = FirebaseFirestore.getInstance();
         this.auth = FirebaseAuth.getInstance();
+    }
+
+    // CREATE group chat
+    public void createGroupChat(String groupName, List<String> participantIds,
+                               OnSuccessListener<Chat> onSuccess, OnFailureListener onFailure) {
+        String chatId = db.collection(COLLECTION_CHATS).document().getId();
+
+        // Create chat with null projectId (indicating it's a group chat, not project chat)
+        Chat newChat = new Chat(chatId, null, groupName, participantIds);
+        // Set lastMessageTime to now so it appears in the list
+        newChat.setLastMessageTime(Timestamp.now());
+
+        db.collection(COLLECTION_CHATS)
+            .document(chatId)
+            .set(newChat)
+            .addOnSuccessListener(aVoid -> {
+                Log.d(TAG, "Group chat created: " + chatId);
+                onSuccess.onSuccess(newChat);
+            })
+            .addOnFailureListener(onFailure);
+    }
+
+    // GET or CREATE one-on-one chat
+    public void getOrCreateOneOnOneChat(String otherUserId, String otherUserName,
+                                       OnSuccessListener<Chat> onSuccess, OnFailureListener onFailure) {
+        String currentUserId = auth.getCurrentUser().getUid();
+
+        // Check if chat already exists between these 2 users
+        db.collection(COLLECTION_CHATS)
+            .whereArrayContains("participantIds", currentUserId)
+            .get()
+            .addOnSuccessListener(querySnapshot -> {
+                // Find existing 1-1 chat
+                for (DocumentSnapshot doc : querySnapshot) {
+                    Chat chat = doc.toObject(Chat.class);
+                    if (chat != null && chat.getParticipantIds() != null
+                            && chat.getParticipantIds().size() == 2
+                            && chat.getParticipantIds().contains(otherUserId)
+                            && chat.getProjectId() == null) {
+                        // Found existing 1-1 chat
+                        chat.setChatId(doc.getId());
+                        Log.d(TAG, "Found existing 1-1 chat: " + chat.getChatId());
+                        onSuccess.onSuccess(chat);
+                        return;
+                    }
+                }
+
+                // No existing chat, create new one
+                String chatId = db.collection(COLLECTION_CHATS).document().getId();
+                List<String> participantIds = new ArrayList<>();
+                participantIds.add(currentUserId);
+                participantIds.add(otherUserId);
+
+                Chat newChat = new Chat(chatId, null, otherUserName, participantIds);
+                newChat.setLastMessageTime(Timestamp.now());
+
+                db.collection(COLLECTION_CHATS)
+                    .document(chatId)
+                    .set(newChat)
+                    .addOnSuccessListener(aVoid -> {
+                        Log.d(TAG, "1-1 chat created: " + chatId);
+                        onSuccess.onSuccess(newChat);
+                    })
+                    .addOnFailureListener(onFailure);
+            })
+            .addOnFailureListener(onFailure);
     }
 
     // CREATE hoặc GET chat cho project
@@ -73,7 +138,7 @@ public class ChatRepository {
 
         return db.collection(COLLECTION_CHATS)
             .whereArrayContains("participantIds", currentUserId)
-            .orderBy("lastMessageTime", Query.Direction.DESCENDING)
+            // Không dùng orderBy để tránh lỗi index, sẽ sort ở client side
             .addSnapshotListener((querySnapshot, error) -> {
                 if (error != null) {
                     Log.e(TAG, "Error getting chats", error);
@@ -90,6 +155,15 @@ public class ChatRepository {
                             chats.add(chat);
                         }
                     }
+
+                    // Sort by lastMessageTime ở client side (newest first)
+                    chats.sort((c1, c2) -> {
+                        if (c1.getLastMessageTime() == null && c2.getLastMessageTime() == null) return 0;
+                        if (c1.getLastMessageTime() == null) return 1;
+                        if (c2.getLastMessageTime() == null) return -1;
+                        return c2.getLastMessageTime().compareTo(c1.getLastMessageTime());
+                    });
+
                     Log.d(TAG, "Found " + chats.size() + " chats");
                     onSuccess.onSuccess(chats);
                 }
@@ -130,7 +204,7 @@ public class ChatRepository {
                                                OnFailureListener onFailure) {
         return db.collection(COLLECTION_MESSAGES)
             .whereEqualTo("chatId", chatId)
-            .orderBy("timestamp", Query.Direction.ASCENDING)
+            // Không dùng orderBy để tránh lỗi index, sẽ sort ở client side
             .addSnapshotListener((querySnapshot, error) -> {
                 if (error != null) {
                     Log.e(TAG, "Error getting messages", error);
@@ -147,6 +221,15 @@ public class ChatRepository {
                             messages.add(message);
                         }
                     }
+
+                    // Sort by timestamp ở client side (oldest first)
+                    messages.sort((m1, m2) -> {
+                        if (m1.getTimestamp() == null && m2.getTimestamp() == null) return 0;
+                        if (m1.getTimestamp() == null) return 1;
+                        if (m2.getTimestamp() == null) return -1;
+                        return m1.getTimestamp().compareTo(m2.getTimestamp());
+                    });
+
                     Log.d(TAG, "Found " + messages.size() + " messages");
                     onSuccess.onSuccess(messages);
                 }

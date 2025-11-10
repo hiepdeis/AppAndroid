@@ -16,7 +16,8 @@
         <!-- Home Activity - Màn hình chính sau đăng nhập -->
         <activity
             android:name=".HomeActivity"
-            android:exported="false" />
+            android:exported="false"
+            android:windowSoftInputMode="adjustPan" />
 
         <!-- Create Project Activity - Màn hình tạo project mới -->
         <activity
@@ -48,15 +49,6 @@
             android:name=".UserProfileActivity"
             android:exported="false" />
 
-        <!-- Chat List Activity - Màn hình danh sách chat -->
-        <activity
-            android:name=".ChatListActivity"
-            android:exported="false" />
-
-        <!-- Chat Detail Activity - Màn hình chi tiết chat -->
-        <activity
-            android:name=".ChatDetailActivity"
-            android:exported="false" />
 
         <!-- Register Activity - Màn hình đăng ký -->
         <activity

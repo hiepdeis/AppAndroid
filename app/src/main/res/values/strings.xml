@@ -1,3 +1,32 @@
 <resources>
     <string name="app_name">Task Manager</string>
+
+    <!-- Projects -->
+    <string name="search_projects">Search projects...</string>
+    <string name="no_projects_icon">📂</string>
+    <string name="no_projects_yet">No projects yet</string>
+    <string name="create_first_project">Create your first project to get started</string>
+
+    <!-- Tasks -->
+    <string name="no_tasks_icon">📋</string>
+    <string name="no_tasks_yet">No tasks yet</string>
+    <string name="all_tasks_appear_here">All tasks will appear here</string>
+
+    <!-- Chat -->
+    <string name="my_chats">💬 My Chats</string>
+    <string name="no_chats_yet">No chats yet</string>
+    <string name="create_project_chat">Create a project and start chatting with your team</string>
+    <string name="back_to_chats">Back to Chats</string>
+    <string name="project_chat">Project Chat</string>
+    <string name="type_message">Type a message...</string>
+    <string name="send">Send</string>
+    <string name="create_group_chat">Create Group Chat</string>
+    <string name="group_name">Group name</string>
+    <string name="add_members">Add Members</string>
+    <string name="search_users">Search users by name...</string>
+    <string name="no_members_selected">No members selected</string>
+    <string name="members_selected">%d member(s) selected</string>
+    <string name="create">Create</string>
+    <string name="user_avatar">User Avatar</string>
+    <string name="chat_with_user">Chat with user</string>
 </resources>

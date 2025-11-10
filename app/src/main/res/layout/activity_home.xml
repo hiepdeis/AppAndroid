@@ -19,140 +19,19 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent">
 
-        <!-- Projects List Container -->
-        <LinearLayout
-            android:id="@+id/projectsContainer"
+        <!-- Projects Fragment Container -->
+        <FrameLayout
+            android:id="@+id/projectFragmentContainer"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
-            android:orientation="vertical"
-            android:visibility="visible">
+            android:visibility="visible" />
 
-            <!-- Search Bar Header -->
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="horizontal"
-                android:padding="16dp"
-                android:gravity="center_vertical">
-
-                <EditText
-                    android:id="@+id/searchBar"
-                    android:layout_width="match_parent"
-                    android:layout_height="56dp"
-                    android:background="@drawable/bg_search_bar"
-                    android:hint="Search projects..."
-                    android:textColorHint="#999999"
-                    android:textColor="#333333"
-                    android:textSize="16sp"
-                    android:paddingStart="20dp"
-                    android:paddingEnd="20dp"
-                    android:drawableStart="@android:drawable/ic_menu_search"
-                    android:drawablePadding="12dp"
-                    android:elevation="6dp"
-                    android:inputType="text"
-                    android:imeOptions="actionSearch"
-                    android:maxLines="1" />
-
-            </LinearLayout>
-
-            <!-- RecyclerView for Projects -->
-            <androidx.recyclerview.widget.RecyclerView
-                android:id="@+id/recyclerViewProjects"
-                android:layout_width="match_parent"
-                android:layout_height="0dp"
-                android:layout_weight="1"
-                android:clipToPadding="false"
-                android:paddingTop="8dp"
-                android:paddingBottom="80dp" />
-
-            <!-- Empty State -->
-            <LinearLayout
-                android:id="@+id/emptyState"
-                android:layout_width="match_parent"
-                android:layout_height="match_parent"
-                android:orientation="vertical"
-                android:gravity="center"
-                android:visibility="gone">
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="📂"
-                    android:textSize="64sp" />
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="No projects yet"
-                    android:textSize="18sp"
-                    android:textColor="#999999"
-                    android:layout_marginTop="16dp" />
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="Create your first project to get started"
-                    android:textSize="14sp"
-                    android:textColor="#CCCCCC"
-                    android:layout_marginTop="8dp" />
-
-            </LinearLayout>
-
-        </LinearLayout>
-
-        <!-- Task List Container -->
-        <LinearLayout
-            android:id="@+id/taskContainer"
+        <!-- Tasks Fragment Container -->
+        <FrameLayout
+            android:id="@+id/taskFragmentContainer"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
-            android:orientation="vertical"
-            android:visibility="gone">
-
-
-            <!-- RecyclerView for Tasks -->
-            <androidx.recyclerview.widget.RecyclerView
-                android:id="@+id/recyclerViewTasks"
-                android:layout_width="match_parent"
-                android:layout_height="0dp"
-                android:layout_weight="1"
-                android:clipToPadding="false"
-                android:paddingTop="8dp"
-                android:paddingBottom="80dp" />
-
-            <!-- Empty State for Tasks -->
-            <LinearLayout
-                android:id="@+id/emptyStateTask"
-                android:layout_width="match_parent"
-                android:layout_height="match_parent"
-                android:orientation="vertical"
-                android:gravity="center"
-                android:visibility="gone">
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="📋"
-                    android:textSize="64sp" />
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="No tasks yet"
-                    android:textSize="18sp"
-                    android:textColor="#999999"
-                    android:layout_marginTop="16dp" />
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="All tasks will appear here"
-                    android:textSize="14sp"
-                    android:textColor="#CCCCCC"
-                    android:layout_marginTop="8dp" />
-
-            </LinearLayout>
-
-        </LinearLayout>
+            android:visibility="gone" />
 
         <!-- Other Tabs Placeholder -->
         <LinearLayout
@@ -184,6 +63,13 @@
                 android:layout_marginTop="32dp" />
 
         </LinearLayout>
+
+        <!-- Chat Fragment Container -->
+        <FrameLayout
+            android:id="@+id/chatFragmentContainer"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:visibility="gone" />
 
         <!-- Profile Container -->
         <ScrollView
