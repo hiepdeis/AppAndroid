@@ -18,7 +18,7 @@ import androidx.fragment.app.FragmentTransaction;
 
 import com.fptu.prm392.mad.fragments.ChatDetailFragment;
 import com.fptu.prm392.mad.fragments.ChatListFragment;
-import com.fptu.prm392.mad.fragments.CalendarFragment;
+
 import com.fptu.prm392.mad.fragments.ProjectListFragment;
 import com.fptu.prm392.mad.fragments.TaskListFragment;
 
@@ -56,7 +56,7 @@ public class HomeActivity extends AppCompatActivity {
     // Fragments
     private ProjectListFragment projectListFragment;
     private TaskListFragment taskListFragment;
-    private CalendarFragment calendarFragment;
+
     private ChatListFragment chatListFragment;
     private ChatDetailFragment chatDetailFragment;
 
@@ -85,7 +85,7 @@ public class HomeActivity extends AppCompatActivity {
         contentArea = findViewById(R.id.contentArea);
         projectFragmentContainer = findViewById(R.id.projectFragmentContainer);
         taskFragmentContainer = findViewById(R.id.taskFragmentContainer);
-        calendarFragmentContainer = findViewById(R.id.calendarFragmentContainer);
+
         chatFragmentContainer = findViewById(R.id.chatFragmentContainer);
         otherTabsContainer = findViewById(R.id.otherTabsContainer);
         profileContainer = findViewById(R.id.profileContainer);
@@ -109,8 +109,6 @@ public class HomeActivity extends AppCompatActivity {
         taskListFragment = TaskListFragment.newInstance();
         taskListFragment.setOnTaskClickListener(this::openTaskDetail);
 
-        calendarFragment = CalendarFragment.newInstance();
-        calendarFragment.setOnTaskClickListener(this::openTaskDetail);
 
         chatListFragment = ChatListFragment.newInstance();
         chatListFragment.setOnChatClickListener(this::openChatDetail);
@@ -154,7 +152,7 @@ public class HomeActivity extends AppCompatActivity {
                     return true;
                 } else if (itemId == R.id.nav_calendar) {
 
-                    showCalendarTab();
+                   // showCalendarTab();
                     return true;
                 } else if (itemId == R.id.nav_chat) {
                     showChatTab();
@@ -286,10 +284,7 @@ public class HomeActivity extends AppCompatActivity {
         profileContainer.setVisibility(View.GONE);
         contentArea.setBackgroundResource(R.drawable.img_3);
 
-        // Load calendar fragment
-        FragmentTransaction transaction = getSupportFragmentManager().beginTransaction();
-        transaction.replace(R.id.calendarFragmentContainer, calendarFragment);
-        transaction.commit();
+
     }
 
     private void showOtherTab(String tabName) {
