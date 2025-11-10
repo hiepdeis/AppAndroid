@@ -83,21 +83,43 @@
 
 </LinearLayout>
 
-    <!-- Join Project Button -->
-    <ImageView
-        android:id="@+id/btnJoinProject"
-        android:layout_width="56dp"
-        android:layout_height="56dp"
-        android:layout_gravity="bottom|start"
-        android:layout_marginStart="16dp"
-        android:layout_marginBottom="96dp"
-        android:src="@drawable/join_project"
-        android:background="@drawable/bg_fab_main"
-        android:padding="12dp"
-        android:clickable="true"
-        android:focusable="true"
-        android:elevation="6dp"
-        android:contentDescription="Join Project" />
+    <!-- Buttons Container - Right Side Vertical Stack -->
+    <LinearLayout
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="bottom|end"
+        android:orientation="vertical"
+        android:layout_marginEnd="24dp"
+        android:layout_marginBottom="88dp">
+
+        <!-- Join Project Button (Top) -->
+        <ImageView
+            android:id="@+id/btnJoinProject"
+            android:layout_width="60dp"
+            android:layout_height="60dp"
+            android:src="@drawable/join_project"
+            android:background="@drawable/bg_fab_main"
+            android:padding="12dp"
+            android:clickable="true"
+            android:focusable="true"
+            android:elevation="6dp"
+            android:contentDescription="Join Project" />
+
+        <!-- Create Project Button (Bottom) -->
+        <ImageView
+            android:id="@+id/fabCreateProject"
+            android:layout_width="64dp"
+            android:layout_height="64dp"
+            android:layout_marginTop="16dp"
+            android:src="@drawable/add_project"
+            android:background="@drawable/bg_simple_fab_ripple"
+            android:scaleType="centerInside"
+            android:padding="12dp"
+            android:contentDescription="Create new project"
+            android:clickable="true"
+            android:focusable="true" />
+
+    </LinearLayout>
 
 </FrameLayout>
 

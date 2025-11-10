@@ -33,6 +33,13 @@
             android:layout_height="match_parent"
             android:visibility="gone" />
 
+        <!-- Calendar Fragment Container -->
+        <FrameLayout
+            android:id="@+id/calendarFragmentContainer"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:visibility="gone" />
+
         <!-- Other Tabs Placeholder -->
         <LinearLayout
             android:id="@+id/otherTabsContainer"
@@ -236,23 +243,6 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent" />
 
-    <!-- Simple Add Project Button -->
-    <ImageView
-        android:id="@+id/fabCreateProject"
-        android:layout_width="64dp"
-        android:layout_height="64dp"
-        android:layout_marginEnd="24dp"
-        android:layout_marginBottom="24dp"
-        android:src="@drawable/add_project"
-        android:background="@drawable/bg_simple_fab_ripple"
-        android:scaleType="centerInside"
-        android:padding="12dp"
-        android:contentDescription="Create new project"
-        android:clickable="true"
-        android:focusable="true"
-        android:elevation="8dp"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintBottom_toTopOf="@id/bottomNavigationView" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>
 

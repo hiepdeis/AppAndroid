@@ -5,7 +5,7 @@
     android:layout_height="wrap_content"
     android:orientation="vertical"
     android:background="@drawable/bg_dialog_rounded"
-    android:padding="16dp">
+    android:padding="20dp">
 
     <!-- Search Bar with Back Button -->
     <LinearLayout
@@ -53,8 +53,9 @@
         android:layout_width="match_parent"
         android:layout_height="400dp"
         android:clipToPadding="false"
-        android:paddingTop="8dp"
-        android:paddingBottom="8dp" />
+        android:clipChildren="false"
+        android:paddingTop="4dp"
+        android:paddingBottom="4dp" />
 
     <!-- Empty State -->
     <TextView
