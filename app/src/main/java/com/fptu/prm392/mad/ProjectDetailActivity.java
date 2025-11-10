@@ -5,6 +5,7 @@ import android.content.Intent;
 import android.os.Bundle;
 import android.text.Editable;
 import android.text.TextWatcher;
+import android.util.Log;
 import android.view.View;
 import android.view.Window;
 import android.widget.EditText;
@@ -36,10 +37,14 @@ public class ProjectDetailActivity extends AppCompatActivity {
 
     private ImageView btnBack;
     private TextView tvProjectName, tvProjectDescription, tvMemberCount, tvTaskStats;
+    private EditText etProjectName, etProjectDescription;
+    private ImageView btnEdit, btnSave;
+    private boolean isEditMode = false;
 
     private ProjectRepository projectRepository;
     private TaskRepository taskRepository;
     private UserRepository userRepository;
+    private com.google.firebase.auth.FirebaseAuth auth;
     private String projectId;
     private Project currentProject;
 
@@ -50,7 +55,7 @@ public class ProjectDetailActivity extends AppCompatActivity {
     // Horizontal Menu
     private ImageView fabMain;
     private LinearLayout horizontalMenu;
-    private LinearLayout menuMember, menuTask, menuChat;
+    private LinearLayout menuMember, menuTask, menuChat, menuDelete;
     private boolean isMenuOpen = false;
 
     @Override
@@ -61,6 +66,7 @@ public class ProjectDetailActivity extends AppCompatActivity {
         projectRepository = new ProjectRepository();
         taskRepository = new TaskRepository();
         userRepository = new UserRepository();
+        auth = com.google.firebase.auth.FirebaseAuth.getInstance();
 
         // Get projectId from intent
         projectId = getIntent().getStringExtra("PROJECT_ID");
@@ -74,6 +80,10 @@ public class ProjectDetailActivity extends AppCompatActivity {
         btnBack = findViewById(R.id.btnBack);
         tvProjectName = findViewById(R.id.tvProjectName);
         tvProjectDescription = findViewById(R.id.tvProjectDescription);
+        etProjectName = findViewById(R.id.etProjectName);
+        etProjectDescription = findViewById(R.id.etProjectDescription);
+        btnEdit = findViewById(R.id.btnEdit);
+        btnSave = findViewById(R.id.btnSave);
         tvMemberCount = findViewById(R.id.tvMemberCount);
         tvTaskStats = findViewById(R.id.tvTaskStats);
         // Initialize Kanban Board RecyclerViews
@@ -90,9 +100,16 @@ public class ProjectDetailActivity extends AppCompatActivity {
         menuMember = findViewById(R.id.menuMember);
         menuTask = findViewById(R.id.menuTask);
         menuChat = findViewById(R.id.menuChat);
+        menuDelete = findViewById(R.id.menuDelete);
 
         // Back button
         btnBack.setOnClickListener(v -> finish());
+
+        // Edit button
+        btnEdit.setOnClickListener(v -> enterEditMode());
+
+        // Save button
+        btnSave.setOnClickListener(v -> saveProjectChanges());
 
         // Setup menu click listeners
         setupHorizontalMenu();
@@ -103,6 +120,8 @@ public class ProjectDetailActivity extends AppCompatActivity {
             public void handleOnBackPressed() {
                 if (isMenuOpen) {
                     closeMenu();
+                } else if (isEditMode) {
+                    exitEditMode();
                 } else {
                     setEnabled(false);
                     getOnBackPressedDispatcher().onBackPressed();
@@ -152,7 +171,118 @@ public class ProjectDetailActivity extends AppCompatActivity {
             }
 
             tvMemberCount.setText(String.valueOf(currentProject.getMemberCount()));
+
+            // Check if current user is the owner (creator) of the project
+            checkOwnerPermissions();
         }
+    }
+
+    private void checkOwnerPermissions() {
+        String currentUserId = auth.getCurrentUser() != null ? auth.getCurrentUser().getUid() : null;
+        boolean isOwner = currentUserId != null &&
+                         currentProject != null &&
+                         currentUserId.equals(currentProject.getCreatedBy());
+
+        // Show/hide Edit button based on owner status
+        btnEdit.setVisibility(isOwner ? View.VISIBLE : View.GONE);
+
+        // Also check if Delete menu should be shown in the FAB menu
+        // We'll hide the delete option for non-owners
+        if (menuDelete != null) {
+            menuDelete.setVisibility(isOwner ? View.VISIBLE : View.GONE);
+        }
+    }
+
+    private void enterEditMode() {
+        isEditMode = true;
+
+        // Hide TextViews
+        tvProjectName.setVisibility(View.GONE);
+        tvProjectDescription.setVisibility(View.GONE);
+
+        // Show EditTexts with current values
+        etProjectName.setVisibility(View.VISIBLE);
+        etProjectName.setText(currentProject.getName());
+        etProjectName.requestFocus();
+
+        etProjectDescription.setVisibility(View.VISIBLE);
+        etProjectDescription.setText(currentProject.getDescription());
+
+        // Hide Edit button, show Save button
+        btnEdit.setVisibility(View.GONE);
+        btnSave.setVisibility(View.VISIBLE);
+    }
+
+    private void exitEditMode() {
+        isEditMode = false;
+
+        // Show TextViews
+        tvProjectName.setVisibility(View.VISIBLE);
+        tvProjectDescription.setVisibility(View.VISIBLE);
+
+        // Hide EditTexts
+        etProjectName.setVisibility(View.GONE);
+        etProjectDescription.setVisibility(View.GONE);
+
+        // Show Edit button, hide Save button
+        btnEdit.setVisibility(View.VISIBLE);
+        btnSave.setVisibility(View.GONE);
+    }
+
+    private void saveProjectChanges() {
+        String newName = etProjectName.getText().toString().trim();
+        String newDescription = etProjectDescription.getText().toString().trim();
+
+        // Validate
+        if (newName.isEmpty()) {
+            etProjectName.setError("Project name cannot be empty");
+            etProjectName.requestFocus();
+            return;
+        }
+
+        // Check if anything changed
+        boolean nameChanged = !newName.equals(currentProject.getName());
+        boolean descChanged = !newDescription.equals(currentProject.getDescription());
+
+        if (!nameChanged && !descChanged) {
+            // Nothing changed, just exit edit mode
+            exitEditMode();
+            return;
+        }
+
+        // Show loading
+        android.app.ProgressDialog progressDialog = new android.app.ProgressDialog(this);
+        progressDialog.setMessage("Saving changes...");
+        progressDialog.setCancelable(false);
+        progressDialog.show();
+
+        // Update project
+        java.util.HashMap<String, Object> updates = new java.util.HashMap<>();
+        if (nameChanged) {
+            updates.put("name", newName);
+        }
+        if (descChanged) {
+            updates.put("description", newDescription);
+        }
+
+        projectRepository.updateProject(projectId, updates,
+            aVoid -> {
+                progressDialog.dismiss();
+                Toast.makeText(this, "Project updated successfully", Toast.LENGTH_SHORT).show();
+
+                // Update current project object
+                currentProject.setName(newName);
+                currentProject.setDescription(newDescription);
+
+                // Update UI
+                displayProjectInfo();
+                exitEditMode();
+            },
+            e -> {
+                progressDialog.dismiss();
+                Toast.makeText(this, "Error updating project: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+            }
+        );
     }
 
     private void loadTaskStatistics() {
@@ -316,6 +446,16 @@ public class ProjectDetailActivity extends AppCompatActivity {
             openProjectChat();
             closeMenu();
         });
+
+        menuDelete.setOnClickListener(v -> {
+            showDeleteProjectConfirmation();
+            closeMenu();
+        });
+
+        // Check owner permissions now that all views are initialized
+        if (currentProject != null) {
+            checkOwnerPermissions();
+        }
     }
 
     private void openMenu() {
@@ -448,38 +588,6 @@ public class ProjectDetailActivity extends AppCompatActivity {
         );
     }
 
-    private void showDeleteMemberConfirmation(ProjectMember member, Dialog parentDialog) {
-        new androidx.appcompat.app.AlertDialog.Builder(this)
-            .setTitle("Remove Member")
-            .setMessage("Are you sure you want to remove " +
-                (member.getFullname() != null ? member.getFullname() : member.getEmail()) +
-                " from this project?")
-            .setPositiveButton("Remove", (dialog, which) -> {
-                deleteMember(member, parentDialog);
-            })
-            .setNegativeButton("Cancel", null)
-            .show();
-    }
-
-    private void deleteMember(ProjectMember member, Dialog parentDialog) {
-        projectRepository.removeMemberFromProject(projectId, member.getUserId(),
-            aVoid -> {
-                Toast.makeText(this, "Member removed successfully", Toast.LENGTH_SHORT).show();
-                // Reload members in dialog
-                RecyclerView rvMembers = parentDialog.findViewById(R.id.rvMembers);
-                if (rvMembers != null && rvMembers.getAdapter() instanceof MemberAdapter) {
-                    loadProjectMembers((MemberAdapter) rvMembers.getAdapter());
-                }
-                // Reload project details to update member count
-                loadProjectDetails();
-            },
-            e -> {
-                Toast.makeText(this, "Error removing member: " + e.getMessage(),
-                    Toast.LENGTH_SHORT).show();
-            }
-        );
-    }
-
     private void showAddMemberDialog(Dialog parentDialog) {
         Dialog addDialog = new Dialog(this);
         addDialog.requestWindowFeature(Window.FEATURE_NO_TITLE);
@@ -600,6 +708,181 @@ public class ProjectDetailActivity extends AppCompatActivity {
             e -> {
                 Toast.makeText(this, "Error adding member: " + e.getMessage(),
                     Toast.LENGTH_SHORT).show();
+            }
+        );
+    }
+
+    private void showDeleteMemberConfirmation(ProjectMember member, Dialog parentDialog) {
+        new androidx.appcompat.app.AlertDialog.Builder(this)
+            .setTitle("Remove Member")
+            .setMessage("Are you sure you want to remove " +
+                (member.getFullname() != null ? member.getFullname() : member.getEmail()) +
+                " from this project?")
+            .setPositiveButton("Remove", (dialog, which) -> {
+                deleteMember(member, parentDialog);
+            })
+            .setNegativeButton("Cancel", null)
+            .show();
+    }
+
+    private void deleteMember(ProjectMember member, Dialog parentDialog) {
+        projectRepository.removeMemberFromProject(projectId, member.getUserId(),
+            aVoid -> {
+                Toast.makeText(this, "Member removed successfully", Toast.LENGTH_SHORT).show();
+                // Reload members in dialog
+                RecyclerView rvMembers = parentDialog.findViewById(R.id.rvMembers);
+                if (rvMembers != null && rvMembers.getAdapter() instanceof MemberAdapter) {
+                    loadProjectMembers((MemberAdapter) rvMembers.getAdapter());
+                }
+                // Reload project details to update member count
+                loadProjectDetails();
+            },
+            e -> {
+                Toast.makeText(this, "Error removing member: " + e.getMessage(),
+                    Toast.LENGTH_SHORT).show();
+            }
+        );
+    }
+
+    private void showDeleteProjectConfirmation() {
+        if (currentProject == null) {
+            Toast.makeText(this, "Loading project...", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        new androidx.appcompat.app.AlertDialog.Builder(this)
+            .setTitle("Delete Project")
+            .setMessage("Are you sure you want to delete \"" + currentProject.getName() +
+                "\"?\n\nThis will permanently delete:\n• All tasks in this project\n• All members\n• Project chat\n\nThis action cannot be undone.")
+            .setPositiveButton("Delete", (dialog, which) -> {
+                deleteProjectWithCascade();
+            })
+            .setNegativeButton("Cancel", null)
+            .setIcon(android.R.drawable.ic_dialog_alert)
+            .show();
+    }
+
+    private void deleteProjectWithCascade() {
+        // Show loading
+        android.app.ProgressDialog progressDialog = new android.app.ProgressDialog(this);
+        progressDialog.setMessage("Deleting project...");
+        progressDialog.setCancelable(false);
+        progressDialog.show();
+
+        // Step 1: Delete all tasks in project
+        taskRepository.getTasksByProject(projectId,
+            tasks -> {
+                // Delete each task
+                if (tasks.isEmpty()) {
+                    // No tasks, proceed to delete members
+                    deleteProjectMembers(progressDialog);
+                } else {
+                    deleteTasksRecursive(tasks, 0, progressDialog);
+                }
+            },
+            e -> {
+                progressDialog.dismiss();
+                Toast.makeText(this, "Error loading tasks: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+            }
+        );
+    }
+
+    private void deleteTasksRecursive(List<Task> tasks, int index, android.app.ProgressDialog progressDialog) {
+        if (index >= tasks.size()) {
+            // All tasks deleted, proceed to delete members
+            deleteProjectMembers(progressDialog);
+            return;
+        }
+
+        Task task = tasks.get(index);
+        taskRepository.deleteTask(task.getTaskId(),
+            aVoid -> {
+                // Task deleted, continue with next
+                deleteTasksRecursive(tasks, index + 1, progressDialog);
+            },
+            e -> {
+                // Log error but continue
+                Log.e("ProjectDetail", "Error deleting task " + task.getTaskId() + ": " + e.getMessage());
+                deleteTasksRecursive(tasks, index + 1, progressDialog);
+            }
+        );
+    }
+
+    private void deleteProjectMembers(android.app.ProgressDialog progressDialog) {
+        // Delete members subcollection by getting all members and deleting them
+        projectRepository.getProjectMembers(projectId,
+            members -> {
+                if (members.isEmpty()) {
+                    // No members, proceed to delete chat
+                    deleteProjectChat(progressDialog);
+                } else {
+                    deleteMembersRecursive(members, 0, progressDialog);
+                }
+            },
+            e -> {
+                // Log error but continue
+                Log.e("ProjectDetail", "Error loading members: " + e.getMessage());
+                deleteProjectChat(progressDialog);
+            }
+        );
+    }
+
+    private void deleteMembersRecursive(List<ProjectMember> members, int index, android.app.ProgressDialog progressDialog) {
+        if (index >= members.size()) {
+            // All members deleted, proceed to delete chat
+            deleteProjectChat(progressDialog);
+            return;
+        }
+
+        ProjectMember member = members.get(index);
+        projectRepository.removeMemberFromProject(projectId, member.getUserId(),
+            aVoid -> {
+                // Member deleted, continue with next
+                deleteMembersRecursive(members, index + 1, progressDialog);
+            },
+            e -> {
+                // Log error but continue
+                Log.e("ProjectDetail", "Error deleting member " + member.getUserId() + ": " + e.getMessage());
+                deleteMembersRecursive(members, index + 1, progressDialog);
+            }
+        );
+    }
+
+    private void deleteProjectChat(android.app.ProgressDialog progressDialog) {
+        // Try to find and delete project chat
+
+        // Get chat by projectId and delete it
+        com.google.firebase.firestore.FirebaseFirestore.getInstance()
+            .collection("chats")
+            .whereEqualTo("projectId", projectId)
+            .get()
+            .addOnSuccessListener(querySnapshot -> {
+                // Delete all chats related to this project
+                for (com.google.firebase.firestore.DocumentSnapshot doc : querySnapshot) {
+                    doc.getReference().delete();
+                }
+                // Finally delete the project itself
+                deleteProjectDocument(progressDialog);
+            })
+            .addOnFailureListener(e -> {
+                // Log error but continue
+                Log.e("ProjectDetail", "Error deleting chat: " + e.getMessage());
+                deleteProjectDocument(progressDialog);
+            });
+    }
+
+    private void deleteProjectDocument(android.app.ProgressDialog progressDialog) {
+        // Finally delete the project document
+        projectRepository.deleteProject(projectId,
+            aVoid -> {
+                progressDialog.dismiss();
+                Toast.makeText(this, "Project deleted successfully", Toast.LENGTH_SHORT).show();
+                // Go back to home
+                finish();
+            },
+            e -> {
+                progressDialog.dismiss();
+                Toast.makeText(this, "Error deleting project: " + e.getMessage(), Toast.LENGTH_SHORT).show();
             }
         );
     }

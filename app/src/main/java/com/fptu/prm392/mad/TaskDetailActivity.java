@@ -33,11 +33,13 @@ import java.util.concurrent.TimeUnit;
 
 public class TaskDetailActivity extends AppCompatActivity {
 
-    private ImageView btnBack, btnAddAssignee;
+    private ImageView btnBack, btnAddAssignee, btnEdit, btnSave;
     private TextView tvTaskTitle, tvTaskStatus, tvTaskDescription;
+    private EditText etTaskTitle, etTaskDescription;
     private TextView tvCreatedBy, tvDueDate, tvTimeLeft, tvAssigneeCount;
     private RecyclerView rvAssignees;
     private MaterialButton btnChat, btnDelete;
+    private boolean isEditMode = false;
 
     private TaskRepository taskRepository;
     private UserRepository userRepository;
@@ -75,9 +77,13 @@ public class TaskDetailActivity extends AppCompatActivity {
         // Initialize views
         btnBack = findViewById(R.id.btnBack);
         btnAddAssignee = findViewById(R.id.btnAddAssignee);
+        btnEdit = findViewById(R.id.btnEdit);
+        btnSave = findViewById(R.id.btnSave);
         tvTaskTitle = findViewById(R.id.tvTaskTitle);
+        etTaskTitle = findViewById(R.id.etTaskTitle);
         tvTaskStatus = findViewById(R.id.tvTaskStatus);
         tvTaskDescription = findViewById(R.id.tvTaskDescription);
+        etTaskDescription = findViewById(R.id.etTaskDescription);
         tvCreatedBy = findViewById(R.id.tvCreatedBy);
         tvDueDate = findViewById(R.id.tvDueDate);
         tvTimeLeft = findViewById(R.id.tvTimeLeft);
@@ -97,6 +103,10 @@ public class TaskDetailActivity extends AppCompatActivity {
         // Setup listeners
         btnBack.setOnClickListener(v -> finish());
 
+        btnEdit.setOnClickListener(v -> enterEditMode());
+
+        btnSave.setOnClickListener(v -> saveTaskChanges());
+
         btnAddAssignee.setOnClickListener(v -> showAddAssigneeDialog());
 
         // Click status badge to change status
@@ -105,6 +115,19 @@ public class TaskDetailActivity extends AppCompatActivity {
         btnDelete.setOnClickListener(v -> showDeleteConfirmation());
 
         btnChat.setOnClickListener(v -> openTaskChat());
+
+        // Handle back press
+        getOnBackPressedDispatcher().addCallback(this, new androidx.activity.OnBackPressedCallback(true) {
+            @Override
+            public void handleOnBackPressed() {
+                if (isEditMode) {
+                    exitEditMode();
+                } else {
+                    setEnabled(false);
+                    getOnBackPressedDispatcher().onBackPressed();
+                }
+            }
+        });
 
         // Load task details
         loadTaskDetails();
@@ -134,6 +157,12 @@ public class TaskDetailActivity extends AppCompatActivity {
 
         // Hiện/ẩn nút add assignee
         btnAddAssignee.setVisibility(isCreator ? View.VISIBLE : View.GONE);
+
+        // Hiện/ẩn nút edit (chỉ creator mới có thể edit)
+        btnEdit.setVisibility(isCreator ? View.VISIBLE : View.GONE);
+
+        // Hiện/ẩn nút delete (chỉ creator mới có thể delete)
+        btnDelete.setVisibility(isCreator ? View.VISIBLE : View.GONE);
 
         // Set flag cho adapter để enable/disable delete buttons
         assigneeAdapter.setIsCreator(isCreator);
@@ -304,6 +333,104 @@ public class TaskDetailActivity extends AppCompatActivity {
                 .setPositiveButton("Delete", (dialog, which) -> deleteTask())
                 .setNegativeButton("Cancel", null)
                 .show();
+    }
+
+    private void enterEditMode() {
+        isEditMode = true;
+
+        // Hide TextViews
+        tvTaskTitle.setVisibility(View.GONE);
+        tvTaskDescription.setVisibility(View.GONE);
+
+        // Show EditTexts with current values
+        etTaskTitle.setVisibility(View.VISIBLE);
+        etTaskTitle.setText(currentTask.getTitle());
+        etTaskTitle.requestFocus();
+
+        etTaskDescription.setVisibility(View.VISIBLE);
+        etTaskDescription.setText(currentTask.getDescription());
+
+        // Hide Edit button, show Save button
+        btnEdit.setVisibility(View.GONE);
+        btnSave.setVisibility(View.VISIBLE);
+
+        // Disable status change during edit
+        tvTaskStatus.setEnabled(false);
+    }
+
+    private void exitEditMode() {
+        isEditMode = false;
+
+        // Show TextViews
+        tvTaskTitle.setVisibility(View.VISIBLE);
+        tvTaskDescription.setVisibility(View.VISIBLE);
+
+        // Hide EditTexts
+        etTaskTitle.setVisibility(View.GONE);
+        etTaskDescription.setVisibility(View.GONE);
+
+        // Show Edit button, hide Save button
+        btnEdit.setVisibility(View.VISIBLE);
+        btnSave.setVisibility(View.GONE);
+
+        // Re-enable status change
+        tvTaskStatus.setEnabled(true);
+    }
+
+    private void saveTaskChanges() {
+        String newTitle = etTaskTitle.getText().toString().trim();
+        String newDescription = etTaskDescription.getText().toString().trim();
+
+        // Validate
+        if (newTitle.isEmpty()) {
+            etTaskTitle.setError("Task title cannot be empty");
+            etTaskTitle.requestFocus();
+            return;
+        }
+
+        // Check if anything changed
+        boolean titleChanged = !newTitle.equals(currentTask.getTitle());
+        boolean descChanged = !newDescription.equals(currentTask.getDescription());
+
+        if (!titleChanged && !descChanged) {
+            // Nothing changed, just exit edit mode
+            exitEditMode();
+            return;
+        }
+
+        // Show loading
+        android.app.ProgressDialog progressDialog = new android.app.ProgressDialog(this);
+        progressDialog.setMessage("Saving changes...");
+        progressDialog.setCancelable(false);
+        progressDialog.show();
+
+        // Update task
+        java.util.HashMap<String, Object> updates = new java.util.HashMap<>();
+        if (titleChanged) {
+            updates.put("title", newTitle);
+        }
+        if (descChanged) {
+            updates.put("description", newDescription);
+        }
+
+        taskRepository.updateTask(taskId, updates,
+            aVoid -> {
+                progressDialog.dismiss();
+                Toast.makeText(this, "Task updated successfully", Toast.LENGTH_SHORT).show();
+
+                // Update current task object
+                currentTask.setTitle(newTitle);
+                currentTask.setDescription(newDescription);
+
+                // Update UI
+                displayTaskDetails();
+                exitEditMode();
+            },
+            e -> {
+                progressDialog.dismiss();
+                Toast.makeText(this, "Error updating task: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+            }
+        );
     }
 
     private void deleteTask() {

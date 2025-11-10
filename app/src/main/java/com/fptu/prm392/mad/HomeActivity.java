@@ -284,7 +284,11 @@ public class HomeActivity extends AppCompatActivity {
         ImageView ivProfileAvatar = findViewById(R.id.ivProfileAvatar);
         TextView tvProfileFullname = findViewById(R.id.tvProfileFullname);
         TextView tvProfileEmail = findViewById(R.id.tvProfileEmail);
+        Button btnChangePassword = findViewById(R.id.btnChangePassword);
         Button btnProfileSignOut = findViewById(R.id.btnProfileSignOut);
+
+        // Setup change password button
+        btnChangePassword.setOnClickListener(v -> showChangePasswordDialog());
 
         // Setup sign out button
         btnProfileSignOut.setOnClickListener(v -> showSignOutConfirmation());
@@ -316,6 +320,114 @@ public class HomeActivity extends AppCompatActivity {
             })
             .setNegativeButton("Cancel", null)
             .show();
+    }
+
+    private void showChangePasswordDialog() {
+        // Create dialog
+        android.app.Dialog dialog = new android.app.Dialog(this);
+        dialog.requestWindowFeature(android.view.Window.FEATURE_NO_TITLE);
+        dialog.setContentView(R.layout.dialog_change_password);
+
+        // Set dialog width and background
+        android.view.Window window = dialog.getWindow();
+        if (window != null) {
+            window.setLayout(android.widget.LinearLayout.LayoutParams.MATCH_PARENT,
+                           android.widget.LinearLayout.LayoutParams.WRAP_CONTENT);
+            window.setBackgroundDrawableResource(android.R.color.transparent);
+        }
+
+        // Find views
+        com.google.android.material.textfield.TextInputEditText etCurrentPassword =
+            dialog.findViewById(R.id.etCurrentPassword);
+        com.google.android.material.textfield.TextInputEditText etNewPassword =
+            dialog.findViewById(R.id.etNewPassword);
+        com.google.android.material.textfield.TextInputEditText etConfirmPassword =
+            dialog.findViewById(R.id.etConfirmPassword);
+        com.google.android.material.button.MaterialButton btnCancel =
+            dialog.findViewById(R.id.btnCancel);
+        com.google.android.material.button.MaterialButton btnChange =
+            dialog.findViewById(R.id.btnChange);
+
+        // Cancel button
+        btnCancel.setOnClickListener(v -> dialog.dismiss());
+
+        // Change button
+        btnChange.setOnClickListener(v -> {
+            String currentPassword = etCurrentPassword.getText() != null ?
+                etCurrentPassword.getText().toString().trim() : "";
+            String newPassword = etNewPassword.getText() != null ?
+                etNewPassword.getText().toString().trim() : "";
+            String confirmPassword = etConfirmPassword.getText() != null ?
+                etConfirmPassword.getText().toString().trim() : "";
+
+            // Validate
+            if (currentPassword.isEmpty()) {
+                etCurrentPassword.setError("Please enter current password");
+                etCurrentPassword.requestFocus();
+                return;
+            }
+
+            if (newPassword.isEmpty()) {
+                etNewPassword.setError("Please enter new password");
+                etNewPassword.requestFocus();
+                return;
+            }
+
+            if (newPassword.length() < 6) {
+                etNewPassword.setError("Password must be at least 6 characters");
+                etNewPassword.requestFocus();
+                return;
+            }
+
+            if (!newPassword.equals(confirmPassword)) {
+                etConfirmPassword.setError("Passwords do not match");
+                etConfirmPassword.requestFocus();
+                return;
+            }
+
+            // Change password
+            changePassword(currentPassword, newPassword, dialog);
+        });
+
+        dialog.show();
+    }
+
+    private void changePassword(String currentPassword, String newPassword, android.app.Dialog dialog) {
+        com.google.firebase.auth.FirebaseUser user = mAuth.getCurrentUser();
+        if (user == null || user.getEmail() == null) {
+            Toast.makeText(this, "User not found", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        // Show loading
+        android.app.ProgressDialog progressDialog = new android.app.ProgressDialog(this);
+        progressDialog.setMessage("Changing password...");
+        progressDialog.setCancelable(false);
+        progressDialog.show();
+
+        // Re-authenticate user with current password
+        com.google.firebase.auth.AuthCredential credential =
+            com.google.firebase.auth.EmailAuthProvider.getCredential(user.getEmail(), currentPassword);
+
+        user.reauthenticate(credential)
+            .addOnSuccessListener(aVoid -> {
+                // Re-authentication successful, now update password
+                user.updatePassword(newPassword)
+                    .addOnSuccessListener(aVoid2 -> {
+                        progressDialog.dismiss();
+                        dialog.dismiss();
+                        Toast.makeText(this, "Password changed successfully!", Toast.LENGTH_SHORT).show();
+                    })
+                    .addOnFailureListener(e -> {
+                        progressDialog.dismiss();
+                        Toast.makeText(this, "Failed to change password: " + e.getMessage(),
+                            Toast.LENGTH_SHORT).show();
+                    });
+            })
+            .addOnFailureListener(e -> {
+                progressDialog.dismiss();
+                Toast.makeText(this, "Current password is incorrect", Toast.LENGTH_SHORT).show();
+            });
     }
 
     private void signOut() {

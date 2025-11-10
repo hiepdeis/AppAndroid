@@ -250,6 +250,23 @@ public class TaskRepository {
                 });
     }
 
+    // UPDATE: Cập nhật task với map updates tùy chỉnh
+    public void updateTask(String taskId, java.util.Map<String, Object> updates,
+                          OnSuccessListener<Void> onSuccess,
+                          OnFailureListener onFailure) {
+        db.collection(COLLECTION_TASKS)
+                .document(taskId)
+                .update(updates)
+                .addOnSuccessListener(aVoid -> {
+                    Log.d(TAG, "Task updated successfully: " + taskId);
+                    onSuccess.onSuccess(aVoid);
+                })
+                .addOnFailureListener(e -> {
+                    Log.e(TAG, "Error updating task", e);
+                    onFailure.onFailure(e);
+                });
+    }
+
     // UPDATE: Cập nhật status và dueDate của task
     public void updateTaskStatusAndDueDate(String taskId, String status, com.google.firebase.Timestamp dueDate,
                                            OnSuccessListener<Void> onSuccess,

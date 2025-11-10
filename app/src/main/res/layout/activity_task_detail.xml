@@ -50,7 +50,7 @@
                         android:focusable="true"
                         android:contentDescription="Back" />
 
-                    <!-- Title -->
+                    <!-- Title (TextView) -->
                     <TextView
                         android:id="@+id/tvTaskTitle"
                         android:layout_width="0dp"
@@ -62,6 +62,50 @@
                         android:textColor="#2C3E50"
                         android:layout_marginStart="12dp"
                         android:layout_marginEnd="12dp" />
+
+                    <!-- Title (EditText) -->
+                    <EditText
+                        android:id="@+id/etTaskTitle"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:hint="Task Title"
+                        android:textSize="20sp"
+                        android:textStyle="bold"
+                        android:textColor="#2C3E50"
+                        android:layout_marginStart="12dp"
+                        android:layout_marginEnd="12dp"
+                        android:background="@android:color/transparent"
+                        android:inputType="text"
+                        android:autofillHints="Task Title"
+                        android:visibility="gone" />
+
+                    <!-- Edit Button -->
+                    <ImageView
+                        android:id="@+id/btnEdit"
+                        android:layout_width="36dp"
+                        android:layout_height="36dp"
+                        android:background="?attr/selectableItemBackgroundBorderless"
+                        android:clickable="true"
+                        android:contentDescription="Edit"
+                        android:focusable="true"
+                        android:padding="6dp"
+                        android:layout_marginEnd="4dp"
+                        android:src="@drawable/edit" />
+
+                    <!-- Save Button -->
+                    <ImageView
+                        android:id="@+id/btnSave"
+                        android:layout_width="36dp"
+                        android:layout_height="36dp"
+                        android:background="?attr/selectableItemBackgroundBorderless"
+                        android:clickable="true"
+                        android:contentDescription="Save"
+                        android:focusable="true"
+                        android:padding="6dp"
+                        android:layout_marginEnd="4dp"
+                        android:src="@drawable/save"
+                        android:visibility="gone" />
 
                     <!-- Status Badge -->
                     <TextView
@@ -99,6 +143,7 @@
                     android:textColor="#7F8C8D"
                     android:layout_marginBottom="8dp" />
 
+                <!-- Description (TextView) -->
                 <TextView
                     android:id="@+id/tvTaskDescription"
                     android:layout_width="match_parent"
@@ -108,6 +153,23 @@
                     android:textColor="#2C3E50"
                     android:lineSpacingExtra="4dp"
                     android:layout_marginBottom="24dp" />
+
+                <!-- Description (EditText) -->
+                <EditText
+                    android:id="@+id/etTaskDescription"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:hint="Task description..."
+                    android:textSize="16sp"
+                    android:textColor="#2C3E50"
+                    android:lineSpacingExtra="4dp"
+                    android:layout_marginBottom="24dp"
+                    android:background="@android:color/transparent"
+                    android:inputType="textMultiLine"
+                    android:autofillHints="Task Description"
+                    android:minLines="3"
+                    android:gravity="start"
+                    android:visibility="gone" />
 
                 <!-- Created By Section -->
                 <LinearLayout
