@@ -107,8 +107,10 @@ public class HomeActivity extends AppCompatActivity {
         // Setup RecyclerView for Tasks
         recyclerViewTasks.setLayoutManager(new LinearLayoutManager(this));
         taskListAdapter = new TaskListAdapter(task -> {
-            // TODO: Open task detail when clicked
-            Toast.makeText(HomeActivity.this, "Task: " + task.getTitle(), Toast.LENGTH_SHORT).show();
+            // Open task detail
+            Intent intent = new Intent(HomeActivity.this, TaskDetailActivity.class);
+            intent.putExtra("TASK_ID", task.getTaskId());
+            startActivity(intent);
         });
         recyclerViewTasks.setAdapter(taskListAdapter);
 
@@ -132,7 +134,7 @@ public class HomeActivity extends AppCompatActivity {
                     showOtherTab("Calendar");
                     return true;
                 } else if (itemId == R.id.nav_chat) {
-                    showOtherTab("Chat");
+                    openChatList();
                     return true;
                 } else if (itemId == R.id.nav_notification) {
                     showOtherTab("Notifications");
@@ -329,6 +331,11 @@ public class HomeActivity extends AppCompatActivity {
         navigateToLogin();
 
         Toast.makeText(this, "Signed out successfully", Toast.LENGTH_SHORT).show();
+    }
+
+    private void openChatList() {
+        Intent intent = new Intent(HomeActivity.this, ChatListActivity.class);
+        startActivity(intent);
     }
 
     private void navigateToLogin() {

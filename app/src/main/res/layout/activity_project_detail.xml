@@ -154,27 +154,21 @@
     </com.google.android.material.card.MaterialCardView>
 
     <!-- Kanban Board -->
-    <HorizontalScrollView
-        android:id="@+id/kanbanScrollView"
+    <LinearLayout
+        android:id="@+id/kanbanContainer"
         android:layout_width="0dp"
         android:layout_height="0dp"
         android:layout_marginTop="16dp"
         android:layout_marginBottom="16dp"
-        android:fillViewport="true"
-        android:scrollbars="none"
+        android:orientation="horizontal"
+        android:paddingStart="8dp"
+        android:paddingEnd="8dp"
+        android:weightSum="3"
+        android:baselineAligned="false"
         app:layout_constraintTop_toBottomOf="@id/projectInfoCard"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent">
-
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:orientation="horizontal"
-            android:paddingStart="8dp"
-            android:paddingEnd="8dp"
-            android:weightSum="3"
-            android:baselineAligned="false">
 
             <!-- To Do Column -->
             <LinearLayout
@@ -267,7 +261,6 @@
 
         </LinearLayout>
 
-    </HorizontalScrollView>
 
     <!-- Horizontal Sliding Menu Container -->
     <FrameLayout
@@ -323,7 +316,7 @@
 
             </LinearLayout>
 
-            <!-- Menu Item 2 - Task -->
+            <!-- Menu Item 2 - Create Task -->
             <LinearLayout
                 android:id="@+id/menuTask"
                 android:layout_width="wrap_content"
@@ -341,12 +334,12 @@
                     android:layout_height="32dp"
                     android:src="@drawable/task"
                     android:padding="2dp"
-                    android:contentDescription="Task" />
+                    android:contentDescription="Create Task" />
 
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="Task"
+                    android:text="Create Task"
                     android:textSize="10sp"
                     android:textColor="#666666"
                     android:layout_marginTop="2dp" />

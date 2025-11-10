@@ -1,0 +1,113 @@
+package com.fptu.prm392.mad.adapters;
+
+import android.view.LayoutInflater;
+import android.view.View;
+import android.view.ViewGroup;
+import android.widget.TextView;
+
+import androidx.annotation.NonNull;
+import androidx.recyclerview.widget.RecyclerView;
+
+import com.fptu.prm392.mad.R;
+import com.fptu.prm392.mad.models.Chat;
+
+import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Locale;
+
+public class ChatListAdapter extends RecyclerView.Adapter<ChatListAdapter.ChatViewHolder> {
+
+    private List<Chat> chats;
+    private OnChatClickListener listener;
+    private final SimpleDateFormat timeFormat = new SimpleDateFormat("HH:mm", Locale.getDefault());
+    private final SimpleDateFormat dateFormat = new SimpleDateFormat("dd/MM/yyyy", Locale.getDefault());
+
+    public interface OnChatClickListener {
+        void onChatClick(Chat chat);
+    }
+
+    public ChatListAdapter(OnChatClickListener listener) {
+        this.chats = new ArrayList<>();
+        this.listener = listener;
+    }
+
+    public void setChats(List<Chat> chats) {
+        this.chats = chats;
+        notifyDataSetChanged();
+    }
+
+    @NonNull
+    @Override
+    public ChatViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
+        View view = LayoutInflater.from(parent.getContext())
+                .inflate(R.layout.item_chat, parent, false);
+        return new ChatViewHolder(view);
+    }
+
+    @Override
+    public void onBindViewHolder(@NonNull ChatViewHolder holder, int position) {
+        Chat chat = chats.get(position);
+        holder.bind(chat);
+    }
+
+    @Override
+    public int getItemCount() {
+        return chats.size();
+    }
+
+    class ChatViewHolder extends RecyclerView.ViewHolder {
+        TextView tvProjectName, tvLastMessage, tvTime, tvUnreadCount;
+
+        public ChatViewHolder(@NonNull View itemView) {
+            super(itemView);
+            tvProjectName = itemView.findViewById(R.id.tvProjectName);
+            tvLastMessage = itemView.findViewById(R.id.tvLastMessage);
+            tvTime = itemView.findViewById(R.id.tvTime);
+            tvUnreadCount = itemView.findViewById(R.id.tvUnreadCount);
+        }
+
+        public void bind(Chat chat) {
+            tvProjectName.setText(chat.getProjectName());
+
+            // Display last message
+            if (chat.getLastMessage() != null && !chat.getLastMessage().isEmpty()) {
+                tvLastMessage.setText(chat.getLastMessage());
+            } else {
+                tvLastMessage.setText("No messages yet");
+            }
+
+            // Display time
+            if (chat.getLastMessageTime() != null) {
+                long now = System.currentTimeMillis();
+                long messageTime = chat.getLastMessageTime().toDate().getTime();
+                long diff = now - messageTime;
+
+                // If today, show time; otherwise show date
+                if (diff < 24 * 60 * 60 * 1000) {
+                    tvTime.setText(timeFormat.format(chat.getLastMessageTime().toDate()));
+                } else {
+                    tvTime.setText(dateFormat.format(chat.getLastMessageTime().toDate()));
+                }
+            } else {
+                tvTime.setText("");
+            }
+
+            // Display unread count
+            if (chat.getUnreadCount() > 0) {
+                tvUnreadCount.setVisibility(View.VISIBLE);
+                tvUnreadCount.setText(String.valueOf(chat.getUnreadCount()));
+            } else {
+                tvUnreadCount.setVisibility(View.GONE);
+            }
+
+            // Click listener
+            itemView.setOnClickListener(v -> {
+                if (listener != null) {
+                    listener.onChatClick(chat);
+                }
+            });
+        }
+    }
+}
+

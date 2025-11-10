@@ -179,8 +179,7 @@ public class ProjectDetailActivity extends AppCompatActivity {
         // Setup To Do column
         rvTodoTasks.setLayoutManager(new LinearLayoutManager(this));
         todoAdapter = new TaskCardAdapter(task -> {
-            // TODO: Open task detail activity
-            Toast.makeText(this, "Task: " + task.getTitle(), Toast.LENGTH_SHORT).show();
+            openTaskDetail(task);
         }, dragListener);
         rvTodoTasks.setAdapter(todoAdapter);
         setupDropZone(rvTodoTasks, "todo");
@@ -188,8 +187,7 @@ public class ProjectDetailActivity extends AppCompatActivity {
         // Setup In Progress column
         rvInProgressTasks.setLayoutManager(new LinearLayoutManager(this));
         inProgressAdapter = new TaskCardAdapter(task -> {
-            // TODO: Open task detail activity
-            Toast.makeText(this, "Task: " + task.getTitle(), Toast.LENGTH_SHORT).show();
+            openTaskDetail(task);
         }, dragListener);
         rvInProgressTasks.setAdapter(inProgressAdapter);
         setupDropZone(rvInProgressTasks, "in_progress");
@@ -197,8 +195,7 @@ public class ProjectDetailActivity extends AppCompatActivity {
         // Setup Done column
         rvDoneTasks.setLayoutManager(new LinearLayoutManager(this));
         doneAdapter = new TaskCardAdapter(task -> {
-            // TODO: Open task detail activity
-            Toast.makeText(this, "Task: " + task.getTitle(), Toast.LENGTH_SHORT).show();
+            openTaskDetail(task);
         }, dragListener);
         rvDoneTasks.setAdapter(doneAdapter);
         setupDropZone(rvDoneTasks, "done");
@@ -315,7 +312,7 @@ public class ProjectDetailActivity extends AppCompatActivity {
         });
 
         menuChat.setOnClickListener(v -> {
-            Toast.makeText(this, "Chat", Toast.LENGTH_SHORT).show();
+            openProjectChat();
             closeMenu();
         });
     }
@@ -354,6 +351,39 @@ public class ProjectDetailActivity extends AppCompatActivity {
     private void openCreateTaskActivity() {
         Intent intent = new Intent(this, CreateTaskActivity.class);
         intent.putExtra("PROJECT_ID", projectId);
+        startActivity(intent);
+    }
+
+    private void openProjectChat() {
+        if (currentProject == null) {
+            Toast.makeText(this, "Loading project...", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        // Get or create chat for this project
+        com.fptu.prm392.mad.repositories.ChatRepository chatRepository = new com.fptu.prm392.mad.repositories.ChatRepository();
+
+        chatRepository.getOrCreateProjectChat(
+                projectId,
+                currentProject.getName(),
+                currentProject.getMemberIds(),
+                chat -> {
+                    // Open chat detail
+                    Intent intent = new Intent(this, ChatDetailActivity.class);
+                    intent.putExtra("CHAT_ID", chat.getChatId());
+                    intent.putExtra("PROJECT_NAME", currentProject.getName());
+                    startActivity(intent);
+                },
+                e -> {
+                    Toast.makeText(this, "Error opening chat: " + e.getMessage(),
+                            Toast.LENGTH_SHORT).show();
+                }
+        );
+    }
+
+    private void openTaskDetail(Task task) {
+        Intent intent = new Intent(this, TaskDetailActivity.class);
+        intent.putExtra("TASK_ID", task.getTaskId());
         startActivity(intent);
     }
 

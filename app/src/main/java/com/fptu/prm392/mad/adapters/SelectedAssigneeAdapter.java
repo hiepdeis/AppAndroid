@@ -18,15 +18,27 @@ import java.util.List;
 public class SelectedAssigneeAdapter extends RecyclerView.Adapter<SelectedAssigneeAdapter.ViewHolder> {
 
     private List<ProjectMember> selectedMembers;
-    private OnAssigneeRemoveListener listener;
+    private OnAssigneeRemoveListener removeListener;
+    private OnAssigneeClickListener clickListener;
 
     public interface OnAssigneeRemoveListener {
         void onRemoveAssignee(ProjectMember member, int position);
     }
 
-    public SelectedAssigneeAdapter(OnAssigneeRemoveListener listener) {
+    public interface OnAssigneeClickListener {
+        void onAssigneeClick(ProjectMember member);
+    }
+
+    public SelectedAssigneeAdapter(OnAssigneeRemoveListener removeListener) {
         this.selectedMembers = new ArrayList<>();
-        this.listener = listener;
+        this.removeListener = removeListener;
+        this.clickListener = null;
+    }
+
+    public SelectedAssigneeAdapter(OnAssigneeRemoveListener removeListener, OnAssigneeClickListener clickListener) {
+        this.selectedMembers = new ArrayList<>();
+        this.removeListener = removeListener;
+        this.clickListener = clickListener;
     }
 
     public void setSelectedMembers(List<ProjectMember> members) {
@@ -96,9 +108,20 @@ public class SelectedAssigneeAdapter extends RecyclerView.Adapter<SelectedAssign
                     : member.getEmail();
             tvAssigneeName.setText(displayName);
 
-            btnRemoveAssignee.setOnClickListener(v -> {
-                if (listener != null) {
-                    listener.onRemoveAssignee(member, getAdapterPosition());
+            // Show/hide remove button based on listener
+            if (removeListener != null) {
+                btnRemoveAssignee.setVisibility(View.VISIBLE);
+                btnRemoveAssignee.setOnClickListener(v -> {
+                    removeListener.onRemoveAssignee(member, getAdapterPosition());
+                });
+            } else {
+                btnRemoveAssignee.setVisibility(View.GONE);
+            }
+
+            // Handle item click to view profile
+            itemView.setOnClickListener(v -> {
+                if (clickListener != null) {
+                    clickListener.onAssigneeClick(member);
                 }
             });
         }

@@ -87,6 +87,7 @@ public class TaskCardAdapter extends RecyclerView.Adapter<TaskCardAdapter.ViewHo
             // Set task title
             tvTaskTitle.setText(task.getTitle());
 
+
             // Set due date if available
             if (task.getDueDate() != null) {
                 tvDueDate.setText(dateFormat.format(task.getDueDate().toDate()));

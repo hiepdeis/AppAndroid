@@ -24,6 +24,34 @@ public class TaskRepository {
         this.auth = FirebaseAuth.getInstance();
     }
 
+    // READ: Lấy task theo ID
+    public void getTaskById(String taskId,
+                           OnSuccessListener<Task> onSuccess,
+                           OnFailureListener onFailure) {
+        db.collection(COLLECTION_TASKS)
+                .document(taskId)
+                .get()
+                .addOnSuccessListener(documentSnapshot -> {
+                    if (documentSnapshot.exists()) {
+                        Task task = documentSnapshot.toObject(Task.class);
+                        if (task != null) {
+                            Log.d(TAG, "Task found: " + taskId);
+                            onSuccess.onSuccess(task);
+                        } else {
+                            Log.e(TAG, "Task data is null");
+                            onFailure.onFailure(new Exception("Task data is null"));
+                        }
+                    } else {
+                        Log.e(TAG, "Task not found: " + taskId);
+                        onFailure.onFailure(new Exception("Task not found"));
+                    }
+                })
+                .addOnFailureListener(e -> {
+                    Log.e(TAG, "Error getting task", e);
+                    onFailure.onFailure(e);
+                });
+    }
+
     // CREATE: Tạo task mới với current user làm owner
     public void createTask(String projectId, String title, String description,
                           OnSuccessListener<String> onSuccess,
@@ -278,6 +306,23 @@ public class TaskRepository {
                 })
                 .addOnFailureListener(e -> {
                     Log.e(TAG, "Error updating task details", e);
+                    onFailure.onFailure(e);
+                });
+    }
+
+    // DELETE: Xóa task
+    public void deleteTask(String taskId,
+                          OnSuccessListener<Void> onSuccess,
+                          OnFailureListener onFailure) {
+        db.collection(COLLECTION_TASKS)
+                .document(taskId)
+                .delete()
+                .addOnSuccessListener(aVoid -> {
+                    Log.d(TAG, "Task deleted successfully: " + taskId);
+                    onSuccess.onSuccess(aVoid);
+                })
+                .addOnFailureListener(e -> {
+                    Log.e(TAG, "Error deleting task", e);
                     onFailure.onFailure(e);
                 });
     }

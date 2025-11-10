@@ -1,0 +1,276 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@drawable/task_detail_background"
+    android:fillViewport="true"
+    android:fitsSystemWindows="true">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="16dp">
+
+        <!-- Main Content Card -->
+        <com.google.android.material.card.MaterialCardView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:layout_marginBottom="16dp"
+            app:cardCornerRadius="20dp"
+            app:cardElevation="8dp"
+            app:strokeWidth="0dp">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:background="@android:color/white"
+                android:padding="24dp">
+
+                <!-- Header Section -->
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical"
+                    android:layout_marginBottom="24dp">
+
+                    <!-- Back Button -->
+                    <ImageView
+                        android:id="@+id/btnBack"
+                        android:layout_width="40dp"
+                        android:layout_height="40dp"
+                        android:src="@drawable/back"
+                        android:padding="8dp"
+                        android:background="?attr/selectableItemBackgroundBorderless"
+                        android:clickable="true"
+                        android:focusable="true"
+                        android:contentDescription="Back" />
+
+                    <!-- Title -->
+                    <TextView
+                        android:id="@+id/tvTaskTitle"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="Task Title"
+                        android:textSize="20sp"
+                        android:textStyle="bold"
+                        android:textColor="#2C3E50"
+                        android:layout_marginStart="12dp"
+                        android:layout_marginEnd="12dp" />
+
+                    <!-- Status Badge -->
+                    <TextView
+                        android:id="@+id/tvTaskStatus"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="To Do"
+                        android:textSize="12sp"
+                        android:textStyle="bold"
+                        android:textColor="@android:color/white"
+                        android:background="@drawable/status_badge_todo"
+                        android:paddingStart="12dp"
+                        android:paddingEnd="12dp"
+                        android:paddingTop="6dp"
+                        android:paddingBottom="6dp"
+                        android:clickable="true"
+                        android:focusable="true" />
+
+                </LinearLayout>
+
+                <!-- Divider -->
+                <View
+                    android:layout_width="match_parent"
+                    android:layout_height="1dp"
+                    android:background="#E0E0E0"
+                    android:layout_marginBottom="20dp" />
+
+                <!-- Description Section -->
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Description"
+                    android:textSize="14sp"
+                    android:textStyle="bold"
+                    android:textColor="#7F8C8D"
+                    android:layout_marginBottom="8dp" />
+
+                <TextView
+                    android:id="@+id/tvTaskDescription"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Task description will appear here"
+                    android:textSize="16sp"
+                    android:textColor="#2C3E50"
+                    android:lineSpacingExtra="4dp"
+                    android:layout_marginBottom="24dp" />
+
+                <!-- Created By Section -->
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical"
+                    android:layout_marginBottom="16dp">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Created by: "
+                        android:textSize="14sp"
+                        android:textStyle="bold"
+                        android:textColor="#7F8C8D" />
+
+                    <TextView
+                        android:id="@+id/tvCreatedBy"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Loading..."
+                        android:textSize="14sp"
+                        android:textColor="#2C3E50"
+                        android:layout_marginStart="4dp" />
+
+                </LinearLayout>
+
+                <!-- Due Date Section -->
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:layout_marginBottom="32dp">
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:gravity="center_vertical">
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Due date: "
+                            android:textSize="14sp"
+                            android:textStyle="bold"
+                            android:textColor="#7F8C8D" />
+
+                        <TextView
+                            android:id="@+id/tvDueDate"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="No due date"
+                            android:textSize="14sp"
+                            android:textColor="#2C3E50"
+                            android:layout_marginStart="4dp" />
+
+                    </LinearLayout>
+
+                    <!-- Time Left -->
+                    <TextView
+                        android:id="@+id/tvTimeLeft"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="(3 days left)"
+                        android:textSize="12sp"
+                        android:textColor="#E74C3C"
+                        android:textStyle="italic"
+                        android:layout_marginTop="4dp"
+                        android:visibility="gone" />
+
+                </LinearLayout>
+
+                <!-- Assignees Section -->
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical"
+                    android:layout_marginBottom="8dp">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Assignees"
+                        android:textSize="14sp"
+                        android:textStyle="bold"
+                        android:textColor="#7F8C8D" />
+
+                    <TextView
+                        android:id="@+id/tvAssigneeCount"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text=" (0)"
+                        android:textSize="14sp"
+                        android:textStyle="bold"
+                        android:textColor="#3498DB"
+                        android:layout_marginStart="4dp" />
+
+                </LinearLayout>
+
+                <androidx.recyclerview.widget.RecyclerView
+                    android:id="@+id/rvAssignees"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="24dp" />
+
+                <!-- Action Buttons -->
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:gravity="end">
+
+                    <!-- Delete Button -->
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btnDelete"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Delete"
+                        android:textColor="@android:color/white"
+                        android:textSize="16sp"
+                        android:textStyle="bold"
+                        app:cornerRadius="12dp"
+                        app:icon="@drawable/delete"
+                        app:iconTint="@null"
+                        app:iconGravity="start"
+                        app:iconPadding="8dp"
+                        android:backgroundTint="#E74C3C"
+                        android:paddingStart="20dp"
+                        android:paddingEnd="20dp"
+                        android:paddingTop="12dp"
+                        android:paddingBottom="12dp"
+                        android:layout_marginEnd="12dp" />
+
+                    <!-- Chat Button -->
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btnChat"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Chat"
+                        android:textColor="@android:color/white"
+                        android:textSize="16sp"
+                        android:textStyle="bold"
+                        app:cornerRadius="12dp"
+                        app:icon="@drawable/chat"
+                        app:iconTint="@null"
+                        app:iconGravity="start"
+                        app:iconPadding="8dp"
+                        android:backgroundTint="#3498DB"
+                        android:paddingStart="24dp"
+                        android:paddingEnd="24dp"
+                        android:paddingTop="12dp"
+                        android:paddingBottom="12dp" />
+
+                </LinearLayout>
+
+            </LinearLayout>
+
+        </com.google.android.material.card.MaterialCardView>
+
+    </LinearLayout>
+
+</ScrollView>
+
