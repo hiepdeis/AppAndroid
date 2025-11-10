@@ -15,6 +15,8 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import com.google.android.gms.tasks.OnSuccessListener;
+import com.google.firebase.firestore.FirebaseFirestore;
 
 public class UserRepository {
     private static final String TAG = "UserRepository";
@@ -22,6 +24,7 @@ public class UserRepository {
 
     private final FirebaseFirestore db;
     private final FirebaseAuth auth;
+
 
     public UserRepository() {
         this.db = FirebaseFirestore.getInstance();
@@ -43,6 +46,12 @@ public class UserRepository {
             });
     }
 
+    public void updateUserAvatar(String userId, String avatarUrl, OnSuccessListener<Void> onSuccessListener, OnFailureListener onFailureListener) {
+        db.collection("users").document(userId)
+                .update("avatar", avatarUrl)
+                .addOnSuccessListener(onSuccessListener)
+                .addOnFailureListener(onFailureListener);
+    }
     // READ: Lấy thông tin user theo ID
     public void getUserById(String userId, OnSuccessListener<User> onSuccess, OnFailureListener onFailure) {
         db.collection(COLLECTION_USERS)
@@ -127,13 +136,6 @@ public class UserRepository {
         updateUser(userId, updates, onSuccess, onFailure);
     }
 
-    // UPDATE: Cập nhật avatar user
-    public void updateUserAvatar(String userId, String avatarUrl,
-                                OnSuccessListener<Void> onSuccess, OnFailureListener onFailure) {
-        Map<String, Object> updates = new HashMap<>();
-        updates.put("avatar", avatarUrl);
-        updateUser(userId, updates, onSuccess, onFailure);
-    }
 
     // DELETE: HARD DELETE - Xóa hẳn user khỏi Firebase Auth và Firestore
     public void deleteUserCompletely(OnSuccessListener<Void> onSuccess, OnFailureListener onFailure) {

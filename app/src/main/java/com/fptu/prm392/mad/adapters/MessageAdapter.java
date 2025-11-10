@@ -1,5 +1,6 @@
 package com.fptu.prm392.mad.adapters;
 
+
 import android.view.Gravity;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -99,4 +100,3 @@ public class MessageAdapter extends RecyclerView.Adapter<MessageAdapter.MessageV
         }
     }
 }
-
