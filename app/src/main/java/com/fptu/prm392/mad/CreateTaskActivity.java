@@ -24,6 +24,7 @@ import com.fptu.prm392.mad.adapters.SelectedAssigneeAdapter;
 import com.fptu.prm392.mad.models.ProjectMember;
 import com.fptu.prm392.mad.repositories.ProjectRepository;
 import com.fptu.prm392.mad.repositories.TaskRepository;
+import com.fptu.prm392.mad.utils.NetworkMonitor;
 import com.google.android.material.textfield.TextInputEditText;
 import com.google.firebase.Timestamp;
 import com.google.firebase.auth.FirebaseAuth;
@@ -98,7 +99,14 @@ public class CreateTaskActivity extends AppCompatActivity {
         btnBack.setOnClickListener(v -> finish());
         layoutDueDate.setOnClickListener(v -> showDatePicker());
         btnAddAssignees.setOnClickListener(v -> showSelectAssigneesDialog());
-        btnCreateTask.setOnClickListener(v -> createTask());
+        btnCreateTask.setOnClickListener(v -> {
+            if (!NetworkMonitor.getInstance(this).isNetworkAvailable()) {
+                Toast.makeText(this,
+                    "Không có kết nối internet. Yêu cầu sẽ được thực thi khi có mạng trở lại.",
+                    Toast.LENGTH_LONG).show();
+            }
+            createTask();
+        });
 
         // Load project members
         loadProjectMembers();

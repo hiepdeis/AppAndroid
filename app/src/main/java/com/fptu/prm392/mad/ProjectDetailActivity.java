@@ -28,6 +28,7 @@ import com.fptu.prm392.mad.repositories.ChatRepository;
 import com.fptu.prm392.mad.repositories.ProjectRepository;
 import com.fptu.prm392.mad.repositories.TaskRepository;
 import com.fptu.prm392.mad.repositories.UserRepository;
+import com.fptu.prm392.mad.utils.NetworkMonitor;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -242,7 +243,16 @@ public class ProjectDetailActivity extends AppCompatActivity {
         });
     }
 
+    private boolean isOffline() {
+        return !NetworkMonitor.getInstance(this).isNetworkAvailable();
+    }
+
     private void updateTaskStatus(Task task, String newStatus) {
+        if (isOffline()) {
+            Toast.makeText(this,
+                "Không có kết nối internet. Yêu cầu sẽ được thực thi khi có mạng trở lại.",
+                Toast.LENGTH_LONG).show();
+        }
         // Show loading state
         Toast.makeText(this, "Moving task...", Toast.LENGTH_SHORT).show();
 
@@ -570,6 +580,11 @@ public class ProjectDetailActivity extends AppCompatActivity {
     }
 
     private void addMemberToProject(User user, Dialog addDialog, Dialog parentDialog) {
+        if (isOffline()) {
+            Toast.makeText(this,
+                "Không có kết nối internet. Yêu cầu sẽ được thực thi khi có mạng trở lại.",
+                Toast.LENGTH_LONG).show();
+        }
         // Create ProjectMember object
         ProjectMember newMember = new ProjectMember(
             projectId,

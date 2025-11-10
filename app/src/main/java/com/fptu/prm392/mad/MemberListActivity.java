@@ -21,6 +21,7 @@ import com.fptu.prm392.mad.models.ProjectMember;
 import com.fptu.prm392.mad.models.User;
 import com.fptu.prm392.mad.repositories.ProjectRepository;
 import com.fptu.prm392.mad.repositories.UserRepository;
+import com.fptu.prm392.mad.utils.NetworkMonitor;
 import com.google.firebase.auth.FirebaseAuth;
 
 import java.util.ArrayList;
@@ -139,7 +140,16 @@ public class MemberListActivity extends AppCompatActivity {
             .show();
     }
 
+    private boolean isOffline() {
+        return !NetworkMonitor.getInstance(this).isNetworkAvailable();
+    }
+
     private void deleteMember(ProjectMember member) {
+        if (isOffline()) {
+            Toast.makeText(this,
+                "Không có kết nối internet. Yêu cầu sẽ được thực thi khi có mạng trở lại.",
+                Toast.LENGTH_LONG).show();
+        }
         projectRepository.removeMemberFromProject(projectId, member.getUserId(),
             aVoid -> {
                 Toast.makeText(this, "Member removed successfully", Toast.LENGTH_SHORT).show();
@@ -233,6 +243,11 @@ public class MemberListActivity extends AppCompatActivity {
     }
 
     private void addMemberToProject(User user, android.app.Dialog addDialog) {
+        if (isOffline()) {
+            Toast.makeText(this,
+                "Không có kết nối internet. Yêu cầu sẽ được thực thi khi có mạng trở lại.",
+                Toast.LENGTH_LONG).show();
+        }
         ProjectMember newMember = new ProjectMember(
             projectId,
             user.getUserId(),

@@ -21,6 +21,7 @@ import com.fptu.prm392.mad.repositories.ChatRepository;
 import com.fptu.prm392.mad.repositories.ProjectRepository;
 import com.fptu.prm392.mad.repositories.TaskRepository;
 import com.fptu.prm392.mad.repositories.UserRepository;
+import com.fptu.prm392.mad.utils.NetworkMonitor;
 import com.google.android.material.button.MaterialButton;
 import com.google.firebase.auth.FirebaseAuth;
 
@@ -283,7 +284,16 @@ public class TaskDetailActivity extends AppCompatActivity {
                 .show();
     }
 
+    private boolean isOffline() {
+        return !NetworkMonitor.getInstance(this).isNetworkAvailable();
+    }
+
     private void updateTaskStatus(String newStatus) {
+        if (isOffline()) {
+            Toast.makeText(this,
+                "Không có kết nối internet. Yêu cầu sẽ được thực thi khi có mạng trở lại.",
+                Toast.LENGTH_LONG).show();
+        }
         taskRepository.updateTaskStatus(taskId, newStatus,
                 aVoid -> {
                     Toast.makeText(this, "Status updated successfully!", Toast.LENGTH_SHORT).show();
@@ -307,6 +317,11 @@ public class TaskDetailActivity extends AppCompatActivity {
     }
 
     private void deleteTask() {
+        if (isOffline()) {
+            Toast.makeText(this,
+                "Không có kết nối internet. Yêu cầu sẽ được thực thi khi có mạng trở lại.",
+                Toast.LENGTH_LONG).show();
+        }
         taskRepository.deleteTask(taskId,
                 aVoid -> {
                     Toast.makeText(this, "Task deleted successfully!", Toast.LENGTH_SHORT).show();
@@ -402,6 +417,11 @@ public class TaskDetailActivity extends AppCompatActivity {
     }
 
     private void addAssigneeToTask(com.fptu.prm392.mad.models.User user, android.app.Dialog dialog) {
+        if (isOffline()) {
+            Toast.makeText(this,
+                "Không có kết nối internet. Yêu cầu sẽ được thực thi khi có mạng trở lại.",
+                Toast.LENGTH_LONG).show();
+        }
         taskRepository.addAssigneeToTask(taskId, user.getUserId(),
                 aVoid -> {
                     Toast.makeText(this, "Assignee added successfully", Toast.LENGTH_SHORT).show();
@@ -426,6 +446,11 @@ public class TaskDetailActivity extends AppCompatActivity {
     }
 
     private void removeAssigneeFromTask(String userId) {
+        if (isOffline()) {
+            Toast.makeText(this,
+                "Không có kết nối internet. Yêu cầu sẽ được thực thi khi có mạng trở lại.",
+                Toast.LENGTH_LONG).show();
+        }
         taskRepository.removeAssigneeFromTask(taskId, userId,
                 aVoid -> {
                     Toast.makeText(this, "Assignee removed successfully", Toast.LENGTH_SHORT).show();
