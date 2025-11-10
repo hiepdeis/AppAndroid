@@ -12,23 +12,30 @@
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:theme="@style/Theme.MyApplicationDemo.NoActionBar">
-
-        <!-- Home Activity - Màn hình chính sau đăng nhập -->
+        <activity
+            android:name=".TaskListActivity"
+            android:exported="false" />
+        <activity
+            android:name=".Domains.Projects.Activities.AddMemberActivity"
+            android:exported="false" />
+        <activity
+            android:name=".Domains.Projects.Activities.item_member"
+            android:exported="false" />
+        <activity
+            android:name=".Domains.Projects.Activities.ProjectDetailActivity"
+            android:exported="false" />
+        <activity
+            android:name=".Domains.Projects.Activities.ProjectDetailActivity"
+            android:exported="false" /> <!-- Home Activity - Màn hình chính sau đăng nhập -->
         <activity
             android:name=".HomeActivity"
-            android:exported="false" />
-
-        <!-- Create Project Activity - Màn hình tạo project mới -->
+            android:exported="false" /> <!-- Create Project Activity - Màn hình tạo project mới -->
         <activity
             android:name=".CreateProjectActivity"
-            android:exported="false" />
-
-        <!-- Register Activity - Màn hình đăng ký -->
+            android:exported="false" /> <!-- Register Activity - Màn hình đăng ký -->
         <activity
             android:name=".auth.RegisterActivity"
-            android:exported="false" />
-
-        <!-- Login Activity - Launcher, màn hình đầu tiên -->
+            android:exported="false" /> <!-- Login Activity - Launcher, màn hình đầu tiên -->
         <activity
             android:name=".auth.LoginActivity"
             android:exported="true">

@@ -1,0 +1,88 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:padding="16dp"
+    tools:context=".Domains.Projects.Activities.ProjectDetailActivity">
+
+    <!-- Tiêu đề -->
+    <TextView
+        android:id="@+id/tvProjectName"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:text="Tên Project: AAA"
+        android:textSize="22sp"
+        android:textStyle="bold"
+        android:textColor="@android:color/black"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent" />
+
+    <!-- Mã Project -->
+    <TextView
+        android:id="@+id/tvProjectId"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:text="ID: HZIEU1shZ0lgerUzfKBw"
+        app:layout_constraintTop_toBottomOf="@id/tvProjectName"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent" />
+
+    <!-- Mô tả Project -->
+    <TextView
+        android:id="@+id/tvProjectDescription"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:text="Mô tả: Ứng dụng quản lý dự án nhóm sinh viên"
+        app:layout_constraintTop_toBottomOf="@id/tvProjectId"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent" />
+
+    <!-- Số thành viên -->
+    <TextView
+        android:id="@+id/tvMemberCount"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:text="Số thành viên: 4"
+        app:layout_constraintTop_toBottomOf="@id/tvProjectDescription"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent" />
+
+    <Button
+        android:id="@+id/btnAddMember1"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Add member"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintEnd_toEndOf="parent" />
+
+    <!-- Nhãn danh sách -->
+    <TextView
+        android:id="@+id/tvMemberLabel"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Danh sách thành viên:"
+        android:textStyle="bold"
+        android:textSize="18sp"
+        android:layout_marginTop="16dp"
+        app:layout_constraintTop_toBottomOf="@id/tvMemberCount"
+        app:layout_constraintStart_toStartOf="parent" />
+
+    <!-- Danh sách thành viên -->
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/rvMemberList"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:layout_marginTop="8dp"
+        app:layout_constraintTop_toBottomOf="@id/tvMemberLabel"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintBottom_toBottomOf="parent"
+        tools:listitem="@layout/activity_item_member" />
+
+</androidx.constraintlayout.widget.ConstraintLayout>

@@ -1,3 +1,5 @@
 <resources>
     <string name="app_name">Task Manager</string>
+    <string name="avatar">Avatar người dùng</string>
+    <string name="remove_member">Remove member</string>
 </resources>
