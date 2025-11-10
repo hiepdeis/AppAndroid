@@ -91,12 +91,17 @@ public class ProjectRepository {
             .get()
             .addOnSuccessListener(documentSnapshot -> {
                 if (documentSnapshot.exists()) {
-                    Project project = documentSnapshot.toObject(Project.class);
-                    if (project != null) {
-                        Log.d(TAG, "Project found: " + project.getName());
-                        onSuccess.onSuccess(project);
-                    } else {
-                        onFailure.onFailure(new Exception("Project data is null"));
+                    try {
+                        Project project = documentSnapshot.toObject(Project.class);
+                        if (project != null) {
+                            Log.d(TAG, "Project found: " + project.getName());
+                            onSuccess.onSuccess(project);
+                        } else {
+                            onFailure.onFailure(new Exception("Project data is null"));
+                        }
+                    } catch (RuntimeException e) {
+                        Log.e(TAG, "Error deserializing project " + projectId + ": " + e.getMessage());
+                        onFailure.onFailure(new Exception("Invalid project data structure: " + e.getMessage()));
                     }
                 } else {
                     Log.d(TAG, "Project not found: " + projectId);
@@ -122,9 +127,14 @@ public class ProjectRepository {
             .addOnSuccessListener(queryDocumentSnapshots -> {
                 List<Project> projects = new ArrayList<>();
                 for (DocumentSnapshot doc : queryDocumentSnapshots) {
-                    Project project = doc.toObject(Project.class);
-                    if (project != null) {
-                        projects.add(project);
+                    try {
+                        Project project = doc.toObject(Project.class);
+                        if (project != null) {
+                            projects.add(project);
+                        }
+                    } catch (RuntimeException e) {
+                        // Skip projects with invalid data structure
+                        Log.w(TAG, "Skipping project " + doc.getId() + " due to deserialization error: " + e.getMessage());
                     }
                 }
 
@@ -156,9 +166,14 @@ public class ProjectRepository {
             .addOnSuccessListener(queryDocumentSnapshots -> {
                 List<Project> projects = new ArrayList<>();
                 for (DocumentSnapshot doc : queryDocumentSnapshots) {
-                    Project project = doc.toObject(Project.class);
-                    if (project != null) {
-                        projects.add(project);
+                    try {
+                        Project project = doc.toObject(Project.class);
+                        if (project != null) {
+                            projects.add(project);
+                        }
+                    } catch (RuntimeException e) {
+                        // Skip projects with invalid data structure
+                        Log.w(TAG, "Skipping project " + doc.getId() + " due to deserialization error: " + e.getMessage());
                     }
                 }
 
@@ -185,11 +200,27 @@ public class ProjectRepository {
             .get()
             .addOnSuccessListener(queryDocumentSnapshots -> {
                 List<Project> projects = new ArrayList<>();
+                int skippedCount = 0;
                 for (DocumentSnapshot doc : queryDocumentSnapshots) {
-                    Project project = doc.toObject(Project.class);
-                    if (project != null) {
-                        projects.add(project);
+                    try {
+                        Project project = doc.toObject(Project.class);
+                        if (project != null) {
+                            projects.add(project);
+                        }
+                    } catch (RuntimeException e) {
+                        // Skip projects with invalid data structure
+                        skippedCount++;
+                        Log.w(TAG, "Skipping project " + doc.getId() + " - Name: " + doc.getString("name") +
+                                " due to error: " + e.getMessage());
+                        // Log memberIds để debug
+                        Object memberIds = doc.get("memberIds");
+                        Log.w(TAG, "  memberIds type: " + (memberIds != null ? memberIds.getClass().getName() : "null"));
+                        Log.w(TAG, "  memberIds value: " + memberIds);
                     }
+                }
+
+                if (skippedCount > 0) {
+                    Log.w(TAG, "Skipped " + skippedCount + " projects with invalid data");
                 }
 
                 // Sort by createdAt descending
@@ -199,7 +230,7 @@ public class ProjectRepository {
                     return p2.getCreatedAt().compareTo(p1.getCreatedAt());
                 });
 
-                Log.d(TAG, "Found " + projects.size() + " projects in system");
+                Log.d(TAG, "Found " + projects.size() + " valid projects in system");
                 onSuccess.onSuccess(projects);
             })
             .addOnFailureListener(e -> {
@@ -427,6 +458,63 @@ public class ProjectRepository {
                         onDataChanged.onSuccess(project);
                     }
                 }
+            });
+    }
+
+    // MIGRATION: Fix memberIds field from HashMap to List<String>
+    // Call this once to fix corrupted data in Firestore
+    public void fixAllProjectsMemberIds(OnSuccessListener<String> onSuccess,
+                                       OnFailureListener onFailure) {
+        db.collection(COLLECTION_PROJECTS)
+            .get()
+            .addOnSuccessListener(querySnapshot -> {
+                int totalProjects = querySnapshot.size();
+                int fixedCount = 0;
+                int errorCount = 0;
+
+                for (DocumentSnapshot doc : querySnapshot) {
+                    try {
+                        Object memberIds = doc.get("memberIds");
+
+                        // Check if memberIds needs fixing
+                        if (memberIds instanceof Map) {
+                            // Convert Map to List<String>
+                            Map<?, ?> memberIdsMap = (Map<?, ?>) memberIds;
+                            List<String> memberIdsList = new ArrayList<>();
+
+                            // Extract user IDs from map
+                            for (Object value : memberIdsMap.values()) {
+                                if (value instanceof String) {
+                                    memberIdsList.add((String) value);
+                                }
+                            }
+
+                            // Update document
+                            db.collection(COLLECTION_PROJECTS)
+                                .document(doc.getId())
+                                .update("memberIds", memberIdsList)
+                                .addOnSuccessListener(aVoid -> {
+                                    Log.d(TAG, "Fixed memberIds for project: " + doc.getId());
+                                })
+                                .addOnFailureListener(e -> {
+                                    Log.e(TAG, "Error fixing project " + doc.getId(), e);
+                                });
+
+                            fixedCount++;
+                        }
+                    } catch (Exception e) {
+                        errorCount++;
+                        Log.e(TAG, "Error processing project " + doc.getId(), e);
+                    }
+                }
+
+                String result = "Processed " + totalProjects + " projects. Fixed: " + fixedCount + ", Errors: " + errorCount;
+                Log.d(TAG, result);
+                onSuccess.onSuccess(result);
+            })
+            .addOnFailureListener(e -> {
+                Log.e(TAG, "Error in migration", e);
+                onFailure.onFailure(e);
             });
     }
 }
