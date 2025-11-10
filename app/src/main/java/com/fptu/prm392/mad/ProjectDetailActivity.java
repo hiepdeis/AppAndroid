@@ -25,10 +25,12 @@ import com.fptu.prm392.mad.models.ProjectMember;
 import com.fptu.prm392.mad.models.Task;
 import com.fptu.prm392.mad.models.User;
 import com.fptu.prm392.mad.repositories.ChatRepository;
+import com.fptu.prm392.mad.repositories.NotificationRepository;
 import com.fptu.prm392.mad.repositories.ProjectRepository;
 import com.fptu.prm392.mad.repositories.TaskRepository;
 import com.fptu.prm392.mad.repositories.UserRepository;
 import com.fptu.prm392.mad.utils.NetworkMonitor;
+import com.fptu.prm392.mad.utils.NotificationHelper;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -41,6 +43,7 @@ public class ProjectDetailActivity extends AppCompatActivity {
     private ProjectRepository projectRepository;
     private TaskRepository taskRepository;
     private UserRepository userRepository;
+    private NotificationRepository notificationRepository;
     private String projectId;
     private Project currentProject;
 
@@ -62,6 +65,7 @@ public class ProjectDetailActivity extends AppCompatActivity {
         projectRepository = new ProjectRepository();
         taskRepository = new TaskRepository();
         userRepository = new UserRepository();
+        notificationRepository = new NotificationRepository();
 
         // Get projectId from intent
         projectId = getIntent().getStringExtra("PROJECT_ID");
@@ -600,6 +604,26 @@ public class ProjectDetailActivity extends AppCompatActivity {
             aVoid -> {
                 Toast.makeText(this, "Member added successfully", Toast.LENGTH_SHORT).show();
 
+                // Save notification to Firestore for the new member
+                String memberName = user.getFullname() != null && !user.getFullname().isEmpty() 
+                    ? user.getFullname() : user.getEmail();
+                String projectName = currentProject != null ? currentProject.getName() : "project";
+                
+                notificationRepository.saveNotificationToFirestore(
+                    user.getUserId(),
+                    "member_added",
+                    "Thêm vào project",
+                    "Bạn đã được thêm vào project: " + projectName,
+                    projectId,
+                    null,
+                    notificationId -> {},
+                    e -> {}
+                );
+
+                showLocalNotification("Thêm thành viên",
+                    "Đã thêm " + memberName + " vào project",
+                    projectId);
+
                 // Close add dialog
                 addDialog.dismiss();
 
@@ -617,5 +641,12 @@ public class ProjectDetailActivity extends AppCompatActivity {
                     Toast.LENGTH_SHORT).show();
             }
         );
+    }
+
+    private void showLocalNotification(String title, String content, String projectId) {
+        NotificationHelper.createNotificationChannel(this);
+        if (NotificationHelper.isNotificationPermissionGranted(this)) {
+            NotificationHelper.showNotification(this, title, content, projectId);
+        }
     }
 }

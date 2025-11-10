@@ -18,10 +18,12 @@ import com.fptu.prm392.mad.adapters.SelectedAssigneeAdapter;
 import com.fptu.prm392.mad.models.ProjectMember;
 import com.fptu.prm392.mad.models.Task;
 import com.fptu.prm392.mad.repositories.ChatRepository;
+import com.fptu.prm392.mad.repositories.NotificationRepository;
 import com.fptu.prm392.mad.repositories.ProjectRepository;
 import com.fptu.prm392.mad.repositories.TaskRepository;
 import com.fptu.prm392.mad.repositories.UserRepository;
 import com.fptu.prm392.mad.utils.NetworkMonitor;
+import com.fptu.prm392.mad.utils.NotificationHelper;
 import com.google.android.material.button.MaterialButton;
 import com.google.firebase.auth.FirebaseAuth;
 
@@ -43,6 +45,7 @@ public class TaskDetailActivity extends AppCompatActivity {
     private TaskRepository taskRepository;
     private UserRepository userRepository;
     private ProjectRepository projectRepository;
+    private NotificationRepository notificationRepository;
 
     private String taskId;
     private Task currentTask;
@@ -60,6 +63,7 @@ public class TaskDetailActivity extends AppCompatActivity {
         taskRepository = new TaskRepository();
         userRepository = new UserRepository();
         projectRepository = new ProjectRepository();
+        notificationRepository = new NotificationRepository();
 
         // Get current user ID
         FirebaseAuth mAuth = FirebaseAuth.getInstance();
@@ -297,6 +301,27 @@ public class TaskDetailActivity extends AppCompatActivity {
         taskRepository.updateTaskStatus(taskId, newStatus,
                 aVoid -> {
                     Toast.makeText(this, "Status updated successfully!", Toast.LENGTH_SHORT).show();
+                    
+                    // Save notification to Firestore for assignees
+                    if (currentTask != null && currentTask.getAssignees() != null) {
+                        String statusText = newStatus.equals("todo") ? "To Do" : 
+                                          newStatus.equals("in_progress") ? "In Progress" : "Done";
+                        for (String assigneeId : currentTask.getAssignees()) {
+                            if (!assigneeId.equals(currentUserId)) {
+                                notificationRepository.saveNotificationToFirestore(
+                                    assigneeId,
+                                    "task_updated",
+                                    "Task đã cập nhật",
+                                    "Task '" + currentTask.getTitle() + "' đã chuyển sang trạng thái: " + statusText,
+                                    currentTask.getProjectId(),
+                                    taskId,
+                                    notificationId -> {},
+                                    e -> {}
+                                );
+                            }
+                        }
+                    }
+                    
                     // Reload task details to reflect the change
                     loadTaskDetails();
                 },
@@ -322,8 +347,37 @@ public class TaskDetailActivity extends AppCompatActivity {
                 "Không có kết nối internet. Yêu cầu sẽ được thực thi khi có mạng trở lại.",
                 Toast.LENGTH_LONG).show();
         }
+        
+        // Store task info before deletion
+        String taskTitle = currentTask != null ? currentTask.getTitle() : "";
+        String projectId = currentTask != null ? currentTask.getProjectId() : null;
+        List<String> assignees = currentTask != null && currentTask.getAssignees() != null 
+            ? new ArrayList<>(currentTask.getAssignees()) : new ArrayList<>();
+        
         taskRepository.deleteTask(taskId,
                 aVoid -> {
+                    // Save notification to Firestore for assignees
+                    if (projectId != null && !assignees.isEmpty()) {
+                        for (String assigneeId : assignees) {
+                            if (!assigneeId.equals(currentUserId)) {
+                                notificationRepository.saveNotificationToFirestore(
+                                    assigneeId,
+                                    "task_deleted",
+                                    "Task đã bị xóa",
+                                    "Task '" + taskTitle + "' đã bị xóa",
+                                    projectId,
+                                    taskId,
+                                    notificationId -> {},
+                                    e -> {}
+                                );
+                            }
+                        }
+                    }
+                    
+                    showLocalNotification("Xóa task",
+                        "Task '" + taskTitle + "' đã được xóa",
+                        projectId);
+                    
                     Toast.makeText(this, "Task deleted successfully!", Toast.LENGTH_SHORT).show();
                     finish();
                 },
@@ -422,10 +476,33 @@ public class TaskDetailActivity extends AppCompatActivity {
                 "Không có kết nối internet. Yêu cầu sẽ được thực thi khi có mạng trở lại.",
                 Toast.LENGTH_LONG).show();
         }
+        
+        String taskTitle = currentTask != null ? currentTask.getTitle() : "";
+        String projectId = currentTask != null ? currentTask.getProjectId() : null;
+        
         taskRepository.addAssigneeToTask(taskId, user.getUserId(),
                 aVoid -> {
                     Toast.makeText(this, "Assignee added successfully", Toast.LENGTH_SHORT).show();
                     dialog.dismiss();
+                    
+                    // Save notification to Firestore for the new assignee
+                    if (projectId != null) {
+                        notificationRepository.saveNotificationToFirestore(
+                            user.getUserId(),
+                            "task_assigned",
+                            "Task mới được giao",
+                            "Bạn được giao task: " + taskTitle,
+                            projectId,
+                            taskId,
+                            notificationId -> {},
+                            e -> {}
+                        );
+                    }
+                    
+                    showLocalNotification("Giao nhiệm vụ",
+                        "Đã giao task '" + taskTitle + "' cho " + user.getEmail(),
+                        projectId);
+                    
                     loadTaskDetails(); // Reload to update assignees
                 },
                 e -> Toast.makeText(this, "Error adding assignee: " + e.getMessage(),
@@ -517,6 +594,13 @@ public class TaskDetailActivity extends AppCompatActivity {
             intent.putExtra("PROJECT_ID", currentTask.getProjectId());
         }
         startActivity(intent);
+    }
+
+    private void showLocalNotification(String title, String content, String projectId) {
+        NotificationHelper.createNotificationChannel(this);
+        if (NotificationHelper.isNotificationPermissionGranted(this)) {
+            NotificationHelper.showNotification(this, title, content, projectId);
+        }
     }
 }
 

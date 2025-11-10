@@ -25,11 +25,13 @@ import androidx.fragment.app.FragmentTransaction;
 
 import com.fptu.prm392.mad.fragments.ChatDetailFragment;
 import com.fptu.prm392.mad.fragments.ChatListFragment;
+import com.fptu.prm392.mad.fragments.NotificationListFragment;
 import com.fptu.prm392.mad.fragments.ProjectListFragment;
 import com.fptu.prm392.mad.fragments.TaskListFragment;
 import com.fptu.prm392.mad.models.Chat;
 import com.fptu.prm392.mad.models.Project;
 import com.fptu.prm392.mad.models.Task;
+import com.fptu.prm392.mad.repositories.NotificationRepository;
 import com.fptu.prm392.mad.repositories.UserRepository;
 import com.fptu.prm392.mad.utils.NetworkMonitor;
 import com.fptu.prm392.mad.utils.NotificationHelper;
@@ -49,7 +51,7 @@ public class HomeActivity extends AppCompatActivity {
 
     // Containers
     private FrameLayout contentArea;
-    private FrameLayout projectFragmentContainer, taskFragmentContainer, chatFragmentContainer;
+    private FrameLayout projectFragmentContainer, taskFragmentContainer, chatFragmentContainer, notificationFragmentContainer;
     private LinearLayout otherTabsContainer;
     private ScrollView profileContainer;
 
@@ -58,9 +60,11 @@ public class HomeActivity extends AppCompatActivity {
     private TaskListFragment taskListFragment;
     private ChatListFragment chatListFragment;
     private ChatDetailFragment chatDetailFragment;
+    private NotificationListFragment notificationListFragment;
 
     // Repositories
     private UserRepository userRepository;
+    private NotificationRepository notificationRepository;
 
     private TextView tvTabMessage;
     private LinearLayout networkStatusBanner;
@@ -75,6 +79,7 @@ public class HomeActivity extends AppCompatActivity {
 
         mAuth = FirebaseAuth.getInstance();
         userRepository = new UserRepository();
+        notificationRepository = new NotificationRepository();
 
         // Initialize views
         btnLogout = findViewById(R.id.btnLogout);
@@ -84,6 +89,7 @@ public class HomeActivity extends AppCompatActivity {
         projectFragmentContainer = findViewById(R.id.projectFragmentContainer);
         taskFragmentContainer = findViewById(R.id.taskFragmentContainer);
         chatFragmentContainer = findViewById(R.id.chatFragmentContainer);
+        notificationFragmentContainer = findViewById(R.id.notificationFragmentContainer);
         otherTabsContainer = findViewById(R.id.otherTabsContainer);
         profileContainer = findViewById(R.id.profileContainer);
         tvTabMessage = findViewById(R.id.tvTabMessage);
@@ -116,6 +122,8 @@ public class HomeActivity extends AppCompatActivity {
 
         chatListFragment = ChatListFragment.newInstance();
         chatListFragment.setOnChatClickListener(this::openChatDetail);
+
+        notificationListFragment = NotificationListFragment.newInstance();
 
         // Xử lý back button
         getOnBackPressedDispatcher().addCallback(this, new androidx.activity.OnBackPressedCallback(true) {
@@ -159,7 +167,7 @@ public class HomeActivity extends AppCompatActivity {
                     showChatTab();
                     return true;
                 } else if (itemId == R.id.nav_notification) {
-                    showOtherTab("Notifications");
+                    showNotificationTab();
                     return true;
                 } else if (itemId == R.id.nav_profile) {
                     showProfileTab();
@@ -228,6 +236,7 @@ public class HomeActivity extends AppCompatActivity {
         projectFragmentContainer.setVisibility(View.VISIBLE);
         taskFragmentContainer.setVisibility(View.GONE);
         chatFragmentContainer.setVisibility(View.GONE);
+        notificationFragmentContainer.setVisibility(View.GONE);
         otherTabsContainer.setVisibility(View.GONE);
         profileContainer.setVisibility(View.GONE);
         fabCreateProject.setVisibility(View.VISIBLE);
@@ -242,6 +251,7 @@ public class HomeActivity extends AppCompatActivity {
         projectFragmentContainer.setVisibility(View.GONE);
         taskFragmentContainer.setVisibility(View.VISIBLE);
         chatFragmentContainer.setVisibility(View.GONE);
+        notificationFragmentContainer.setVisibility(View.GONE);
         otherTabsContainer.setVisibility(View.GONE);
         profileContainer.setVisibility(View.GONE);
         fabCreateProject.setVisibility(View.GONE);
@@ -256,6 +266,7 @@ public class HomeActivity extends AppCompatActivity {
         projectFragmentContainer.setVisibility(View.GONE);
         taskFragmentContainer.setVisibility(View.GONE);
         chatFragmentContainer.setVisibility(View.GONE);
+        notificationFragmentContainer.setVisibility(View.GONE);
         otherTabsContainer.setVisibility(View.VISIBLE);
         profileContainer.setVisibility(View.GONE);
         fabCreateProject.setVisibility(View.GONE);
@@ -267,6 +278,7 @@ public class HomeActivity extends AppCompatActivity {
         projectFragmentContainer.setVisibility(View.GONE);
         taskFragmentContainer.setVisibility(View.GONE);
         chatFragmentContainer.setVisibility(View.GONE);
+        notificationFragmentContainer.setVisibility(View.GONE);
         otherTabsContainer.setVisibility(View.GONE);
         profileContainer.setVisibility(View.VISIBLE);
         fabCreateProject.setVisibility(View.GONE);
@@ -278,12 +290,28 @@ public class HomeActivity extends AppCompatActivity {
         projectFragmentContainer.setVisibility(View.GONE);
         taskFragmentContainer.setVisibility(View.GONE);
         chatFragmentContainer.setVisibility(View.VISIBLE);
+        notificationFragmentContainer.setVisibility(View.GONE);
         otherTabsContainer.setVisibility(View.GONE);
         profileContainer.setVisibility(View.GONE);
         fabCreateProject.setVisibility(View.GONE);
         contentArea.setBackgroundResource(R.drawable.chat_background);
 
         showChatListFragment();
+    }
+
+    private void showNotificationTab() {
+        projectFragmentContainer.setVisibility(View.GONE);
+        taskFragmentContainer.setVisibility(View.GONE);
+        chatFragmentContainer.setVisibility(View.GONE);
+        notificationFragmentContainer.setVisibility(View.VISIBLE);
+        otherTabsContainer.setVisibility(View.GONE);
+        profileContainer.setVisibility(View.GONE);
+        fabCreateProject.setVisibility(View.GONE);
+        contentArea.setBackgroundResource(R.drawable.img_3);
+
+        FragmentTransaction transaction = getSupportFragmentManager().beginTransaction();
+        transaction.replace(R.id.notificationFragmentContainer, notificationListFragment);
+        transaction.commit();
     }
 
     private void showChatListFragment() {
@@ -384,6 +412,22 @@ public class HomeActivity extends AppCompatActivity {
         syncStatusMonitor.setSyncStatusListener((projectId, projectName) -> runOnUiThread(() -> {
             String message = "Project '" + projectName + "' đã được đồng bộ!";
             Toast.makeText(HomeActivity.this, "✅ " + message, Toast.LENGTH_LONG).show();
+
+            // Get current user ID
+            FirebaseUser currentUser = mAuth.getCurrentUser();
+            if (currentUser != null) {
+                // Save notification to Firestore
+                notificationRepository.saveNotificationToFirestore(
+                    currentUser.getUid(),
+                    "sync_success",
+                    "Đồng bộ thành công",
+                    message,
+                    projectId,
+                    null,
+                    notificationId -> {},
+                    e -> {}
+                );
+            }
 
             if (NotificationHelper.isNotificationPermissionGranted(HomeActivity.this)) {
                 NotificationHelper.showNotification(

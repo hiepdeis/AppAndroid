@@ -25,3 +25,4 @@ public class MyApplication extends Application {
         Log.d(TAG, "Firestore offline persistence enabled");
     }
 }
+
