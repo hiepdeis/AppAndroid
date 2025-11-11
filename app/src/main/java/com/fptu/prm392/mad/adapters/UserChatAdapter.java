@@ -12,6 +12,7 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import com.fptu.prm392.mad.R;
 import com.fptu.prm392.mad.models.User;
+import com.fptu.prm392.mad.utils.AvatarLoader;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -20,7 +21,7 @@ public class UserChatAdapter extends RecyclerView.Adapter<UserChatAdapter.UserVi
 
     private List<User> users;
     private List<User> usersFiltered;
-    private OnChatClickListener chatClickListener;
+    private final OnChatClickListener chatClickListener;
 
     public interface OnChatClickListener {
         void onChatClick(User user);
@@ -78,10 +79,10 @@ public class UserChatAdapter extends RecyclerView.Adapter<UserChatAdapter.UserVi
     }
 
     class UserViewHolder extends RecyclerView.ViewHolder {
-        private ImageView ivUserAvatar;
-        private TextView tvUserName;
-        private TextView tvUserEmail;
-        private ImageView btnChat;
+        private final ImageView ivUserAvatar;
+        private final TextView tvUserName;
+        private final TextView tvUserEmail;
+        private final ImageView btnChat;
 
         public UserViewHolder(@NonNull View itemView) {
             super(itemView);
@@ -92,6 +93,9 @@ public class UserChatAdapter extends RecyclerView.Adapter<UserChatAdapter.UserVi
         }
 
         public void bind(User user) {
+            // Load avatar using AvatarLoader
+            AvatarLoader.loadAvatar(itemView.getContext(), user.getAvatar(), ivUserAvatar);
+
             // Set user info
             if (user.getFullname() != null && !user.getFullname().isEmpty()) {
                 tvUserName.setText(user.getFullname());

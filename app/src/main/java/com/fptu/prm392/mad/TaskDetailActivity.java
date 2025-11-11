@@ -590,8 +590,8 @@ public class TaskDetailActivity extends AppCompatActivity {
             return;
         }
 
-        // Create chat name from task title
-        String chatName = "Task: " + currentTask.getTitle();
+        // Create chat name from task title (without prefix)
+        String chatName = currentTask.getTitle();
 
         // Create or get task chat (using task ID as identifier)
         ChatRepository chatRepository = new ChatRepository();

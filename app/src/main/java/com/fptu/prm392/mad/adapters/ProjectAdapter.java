@@ -121,10 +121,10 @@ public class ProjectAdapter extends RecyclerView.Adapter<ProjectAdapter.ProjectV
         public void bind(Project project, int myTodoCount, String currentUserId) {
             tvProjectName.setText(project.getName());
 
-            // Xác định role: owner hoặc member
-            boolean isOwner = project.getCreatedBy().equals(currentUserId);
-            if (isOwner) {
-                tvRole.setText("Owner");
+            // Xác định role: manager hoặc member
+            boolean isManager = project.getCreatedBy().equals(currentUserId);
+            if (isManager) {
+                tvRole.setText("Manager");
                 tvRole.setBackgroundResource(R.drawable.bg_status_done); // Xanh lá
             } else {
                 tvRole.setText("Member");

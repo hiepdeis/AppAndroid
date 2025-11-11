@@ -4,6 +4,7 @@ import android.view.Gravity;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
@@ -12,6 +13,8 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import com.fptu.prm392.mad.R;
 import com.fptu.prm392.mad.models.Message;
+import com.fptu.prm392.mad.repositories.UserRepository;
+import com.fptu.prm392.mad.utils.AvatarLoader;
 import com.google.firebase.auth.FirebaseAuth;
 
 import java.text.SimpleDateFormat;
@@ -22,12 +25,14 @@ import java.util.Locale;
 public class MessageAdapter extends RecyclerView.Adapter<MessageAdapter.MessageViewHolder> {
 
     private List<Message> messages;
-    private String currentUserId;
+    private final String currentUserId;
+    private final UserRepository userRepository;
     private final SimpleDateFormat timeFormat = new SimpleDateFormat("HH:mm", Locale.getDefault());
 
     public MessageAdapter() {
         this.messages = new ArrayList<>();
         this.currentUserId = FirebaseAuth.getInstance().getCurrentUser().getUid();
+        this.userRepository = new UserRepository();
     }
 
     public void setMessages(List<Message> messages) {
@@ -60,11 +65,13 @@ public class MessageAdapter extends RecyclerView.Adapter<MessageAdapter.MessageV
     }
 
     class MessageViewHolder extends RecyclerView.ViewHolder {
+        ImageView ivSenderAvatar;
         LinearLayout messageContainer;
         TextView tvMessage, tvSenderName, tvTime;
 
         public MessageViewHolder(@NonNull View itemView) {
             super(itemView);
+            ivSenderAvatar = itemView.findViewById(R.id.ivSenderAvatar);
             messageContainer = itemView.findViewById(R.id.messageContainer);
             tvMessage = itemView.findViewById(R.id.tvMessage);
             tvSenderName = itemView.findViewById(R.id.tvSenderName);
@@ -86,6 +93,9 @@ public class MessageAdapter extends RecyclerView.Adapter<MessageAdapter.MessageV
                 tvSenderName.setVisibility(View.GONE);
                 tvMessage.setTextColor(0xFFFFFFFF); // White text
                 tvTime.setTextColor(0xFFE3F2FD); // Light blue text
+
+                // Hide avatar for own messages
+                ivSenderAvatar.setVisibility(View.GONE);
             } else {
                 // Other's message - align left with light blue background and dark text
                 params.gravity = Gravity.START;
@@ -93,9 +103,27 @@ public class MessageAdapter extends RecyclerView.Adapter<MessageAdapter.MessageV
                 tvSenderName.setVisibility(View.VISIBLE);
                 tvMessage.setTextColor(0xFF1A1A1A); // Dark text
                 tvTime.setTextColor(0xFF757575); // Gray text
+
+                // Show and load avatar for other's messages
+                ivSenderAvatar.setVisibility(View.VISIBLE);
+                loadSenderAvatar(message.getSenderId());
             }
 
             messageContainer.setLayoutParams(params);
+        }
+
+        private void loadSenderAvatar(String senderId) {
+            // Load avatar from User collection using UserRepository
+            userRepository.getUserById(senderId,
+                user -> {
+                    // Load avatar using AvatarLoader with circular crop
+                    AvatarLoader.loadAvatar(itemView.getContext(), user.getAvatar(), ivSenderAvatar);
+                },
+                e -> {
+                    // On error, show default avatar
+                    ivSenderAvatar.setImageResource(R.drawable.profile);
+                }
+            );
         }
     }
 }

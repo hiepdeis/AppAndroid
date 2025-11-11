@@ -107,13 +107,13 @@ public class MemberListActivity extends AppCompatActivity {
     }
 
     private void updateUIBasedOnOwnership() {
-        boolean isOwner = currentUserId.equals(projectOwnerId);
+        boolean isManager = currentUserId.equals(projectOwnerId);
 
         // Hiện/ẩn nút add member
-        btnAddMember.setVisibility(isOwner ? View.VISIBLE : View.GONE);
+        btnAddMember.setVisibility(isManager ? View.VISIBLE : View.GONE);
 
         // Set listener cho adapter để enable/disable delete button
-        memberAdapter.setIsOwner(isOwner);
+        memberAdapter.setIsManager(isManager);
     }
 
     private void loadProjectMembers() {

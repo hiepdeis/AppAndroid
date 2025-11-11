@@ -59,6 +59,7 @@ public class Message {
         this.senderName = senderName;
     }
 
+
     public String getContent() {
         return content;
     }

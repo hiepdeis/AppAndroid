@@ -58,16 +58,6 @@
                 android:textSize="18sp"
                 android:textColor="#999999" />
 
-            <Button
-                android:id="@+id/btnLogout"
-                android:layout_width="match_parent"
-                android:layout_height="56dp"
-                android:text="Đăng Xuất"
-                android:textSize="16sp"
-                android:textStyle="bold"
-                android:backgroundTint="#E91E63"
-                android:textColor="#FFFFFF"
-                android:layout_marginTop="32dp" />
 
         </LinearLayout>
 
@@ -121,23 +111,46 @@
                             android:layout_marginBottom="24dp" />
 
                         <!-- Avatar (Circle) -->
-                        <com.google.android.material.card.MaterialCardView
-                            android:layout_width="120dp"
-                            android:layout_height="120dp"
-                            app:cardCornerRadius="60dp"
-                            app:cardElevation="4dp"
-                            app:strokeWidth="2dp"
-                            app:strokeColor="#E91E63"
+                        <FrameLayout
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
                             android:layout_marginBottom="16dp">
 
-                            <ImageView
-                                android:id="@+id/ivProfileAvatar"
-                                android:layout_width="match_parent"
-                                android:layout_height="match_parent"
-                                android:scaleType="centerCrop"
-                                android:contentDescription="User Avatar" />
+                            <com.google.android.material.card.MaterialCardView
+                                android:layout_width="120dp"
+                                android:layout_height="120dp"
+                                app:cardCornerRadius="60dp"
+                                app:cardElevation="4dp"
+                                app:strokeWidth="2dp"
+                                app:strokeColor="#E91E63">
 
-                        </com.google.android.material.card.MaterialCardView>
+                                <ImageView
+                                    android:id="@+id/ivProfileAvatar"
+                                    android:layout_width="match_parent"
+                                    android:layout_height="match_parent"
+                                    android:scaleType="centerCrop"
+                                    android:src="@drawable/profile"
+                                    android:contentDescription="User Avatar" />
+
+                            </com.google.android.material.card.MaterialCardView>
+
+                            <!-- Edit Button -->
+                            <ImageView
+                                android:id="@+id/btnEditAvatar"
+                                android:layout_width="32dp"
+                                android:layout_height="32dp"
+                                android:layout_gravity="bottom|end"
+                                android:layout_marginEnd="4dp"
+                                android:layout_marginBottom="4dp"
+                                android:src="@drawable/edit"
+                                android:background="@drawable/bg_circular_white"
+                                android:padding="6dp"
+                                android:elevation="8dp"
+                                android:contentDescription="Edit Avatar"
+                                android:clickable="true"
+                                android:focusable="true" />
+
+                        </FrameLayout>
 
                         <!-- Divider -->
                         <View

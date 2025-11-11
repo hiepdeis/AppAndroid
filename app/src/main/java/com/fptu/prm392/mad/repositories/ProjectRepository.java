@@ -51,30 +51,62 @@ public class ProjectRepository {
             .addOnSuccessListener(aVoid -> {
                 Log.d(TAG, "Project created successfully: " + projectId);
 
-                // Tạo owner member trong subcollection
-                com.fptu.prm392.mad.models.ProjectMember ownerMember = new com.fptu.prm392.mad.models.ProjectMember(
-                    projectId, // projectId
-                    currentUserId,
-                    currentUserName != null ? currentUserName : currentUserEmail,
-                    currentUserEmail,
-                    null, // avatar
-                    "owner"
-                );
+                // Get current user's avatar from User collection, then create manager member
+                UserRepository userRepository = new UserRepository();
+                userRepository.getUserById(currentUserId,
+                    user -> {
+                        // Tạo manager member trong subcollection với avatar
+                        com.fptu.prm392.mad.models.ProjectMember managerMember = new com.fptu.prm392.mad.models.ProjectMember(
+                            projectId, // projectId
+                            currentUserId,
+                            currentUserName != null ? currentUserName : currentUserEmail,
+                            currentUserEmail,
+                            user.getAvatar(), // avatar from User collection
+                            "manager"
+                        );
 
-                db.collection(COLLECTION_PROJECTS)
-                    .document(projectId)
-                    .collection("members")
-                    .document(currentUserId)
-                    .set(ownerMember)
-                    .addOnSuccessListener(aVoid2 -> {
-                        Log.d(TAG, "Owner member added to project: " + projectId);
-                        onSuccess.onSuccess(projectId);
-                    })
-                    .addOnFailureListener(e -> {
-                        Log.e(TAG, "Error adding owner member", e);
-                        // Still return success for project creation
-                        onSuccess.onSuccess(projectId);
-                    });
+                        db.collection(COLLECTION_PROJECTS)
+                            .document(projectId)
+                            .collection("members")
+                            .document(currentUserId)
+                            .set(managerMember)
+                            .addOnSuccessListener(aVoid2 -> {
+                                Log.d(TAG, "Manager member added to project: " + projectId);
+                                onSuccess.onSuccess(projectId);
+                            })
+                            .addOnFailureListener(e -> {
+                                Log.e(TAG, "Error adding manager member", e);
+                                // Still return success for project creation
+                                onSuccess.onSuccess(projectId);
+                            });
+                    },
+                    e -> {
+                        // If failed to get user, create member without avatar
+                        Log.e(TAG, "Error getting user avatar", e);
+                        com.fptu.prm392.mad.models.ProjectMember managerMember = new com.fptu.prm392.mad.models.ProjectMember(
+                            projectId,
+                            currentUserId,
+                            currentUserName != null ? currentUserName : currentUserEmail,
+                            currentUserEmail,
+                            null, // fallback to null
+                            "manager"
+                        );
+
+                        db.collection(COLLECTION_PROJECTS)
+                            .document(projectId)
+                            .collection("members")
+                            .document(currentUserId)
+                            .set(managerMember)
+                            .addOnSuccessListener(aVoid2 -> {
+                                Log.d(TAG, "Manager member added (no avatar)");
+                                onSuccess.onSuccess(projectId);
+                            })
+                            .addOnFailureListener(e2 -> {
+                                Log.e(TAG, "Error adding manager member", e2);
+                                onSuccess.onSuccess(projectId);
+                            });
+                    }
+                );
             })
             .addOnFailureListener(e -> {
                 Log.e(TAG, "Error creating project", e);

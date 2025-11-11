@@ -6,7 +6,7 @@ public class ProjectMember {
     private String fullname;        // Denormalized từ User
     private String email;           // Denormalized từ User
     private String avatar;          // Denormalized từ User
-    private String projectRole;     // "owner", "admin", "member"
+    private String projectRole;     // "manager", "admin", "member"
     private com.google.firebase.Timestamp joinedAt;
 
     // Constructor mặc định
@@ -82,8 +82,8 @@ public class ProjectMember {
     }
 
     // Helper methods
-    public boolean isOwner() {
-        return "owner".equals(projectRole);
+    public boolean isManager() {
+        return "manager".equals(projectRole);
     }
 
     public boolean isAdmin() {
@@ -91,7 +91,7 @@ public class ProjectMember {
     }
 
     public boolean canManageProject() {
-        return isOwner() || isAdmin();
+        return isManager() || isAdmin();
     }
 }
 

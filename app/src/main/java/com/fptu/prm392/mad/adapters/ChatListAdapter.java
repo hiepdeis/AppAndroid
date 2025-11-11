@@ -12,6 +12,9 @@ import android.widget.ImageView;
 
 import com.fptu.prm392.mad.R;
 import com.fptu.prm392.mad.models.Chat;
+import com.fptu.prm392.mad.repositories.UserRepository;
+import com.fptu.prm392.mad.utils.AvatarLoader;
+import com.google.firebase.auth.FirebaseAuth;
 
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -22,6 +25,8 @@ public class ChatListAdapter extends RecyclerView.Adapter<ChatListAdapter.ChatVi
 
     private List<Chat> chats;
     private OnChatClickListener listener;
+    private UserRepository userRepository;
+    private String currentUserId;
     private final SimpleDateFormat timeFormat = new SimpleDateFormat("HH:mm", Locale.getDefault());
     private final SimpleDateFormat dateFormat = new SimpleDateFormat("dd/MM/yyyy", Locale.getDefault());
 
@@ -32,6 +37,8 @@ public class ChatListAdapter extends RecyclerView.Adapter<ChatListAdapter.ChatVi
     public ChatListAdapter(OnChatClickListener listener) {
         this.chats = new ArrayList<>();
         this.listener = listener;
+        this.userRepository = new UserRepository();
+        this.currentUserId = FirebaseAuth.getInstance().getCurrentUser().getUid();
     }
 
     private boolean isOneOnOneChat(Chat chat) {
@@ -83,8 +90,13 @@ public class ChatListAdapter extends RecyclerView.Adapter<ChatListAdapter.ChatVi
         public void bind(Chat chat) {
             // Set icon based on chat type
             if (isOneOnOneChat(chat)) {
-                // Solo 1-1 chat: Use profile icon (temporary, will be replaced with avatar later)
-                ivChatIcon.setImageResource(R.drawable.profile);
+                // Solo 1-1 chat: Load avatar of other user
+                String otherUserId = getOtherUserId(chat);
+                if (otherUserId != null) {
+                    loadUserAvatar(otherUserId);
+                } else {
+                    ivChatIcon.setImageResource(R.drawable.profile);
+                }
             } else {
                 // Group chat: Use group chat icon
                 ivChatIcon.setImageResource(R.drawable.group_chat_avatar);
@@ -129,6 +141,32 @@ public class ChatListAdapter extends RecyclerView.Adapter<ChatListAdapter.ChatVi
                     listener.onChatClick(chat);
                 }
             });
+        }
+
+        private String getOtherUserId(Chat chat) {
+            // Get the other user's ID in 1-1 chat
+            if (chat.getParticipantIds() != null && chat.getParticipantIds().size() == 2) {
+                for (String userId : chat.getParticipantIds()) {
+                    if (!userId.equals(currentUserId)) {
+                        return userId;
+                    }
+                }
+            }
+            return null;
+        }
+
+        private void loadUserAvatar(String userId) {
+            // Load avatar from User collection
+            userRepository.getUserById(userId,
+                user -> {
+                    // Load avatar using AvatarLoader with circular crop
+                    AvatarLoader.loadAvatar(itemView.getContext(), user.getAvatar(), ivChatIcon);
+                },
+                e -> {
+                    // On error, show default avatar
+                    ivChatIcon.setImageResource(R.drawable.profile);
+                }
+            );
         }
     }
 }

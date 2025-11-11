@@ -52,7 +52,7 @@ public class TaskRepository {
                 });
     }
 
-    // CREATE: Tạo task mới với current user làm owner
+    // CREATE: Tạo task mới với current user làm creator
     public void createTask(String projectId, String title, String description,
                           OnSuccessListener<String> onSuccess,
                           OnFailureListener onFailure) {
@@ -62,13 +62,13 @@ public class TaskRepository {
         com.google.firebase.firestore.DocumentReference docRef = db.collection(COLLECTION_TASKS).document();
         String taskId = docRef.getId();
 
-        // Tạo object Task với current user làm owner và creator
+        // Tạo object Task với current user làm creator
         Task task = new Task(taskId, projectId, title, description, currentUserId);
 
         // Lưu vào Firestore
         docRef.set(task)
                 .addOnSuccessListener(aVoid -> {
-                    Log.d(TAG, "Task created successfully: " + taskId + " with owner: " + currentUserId);
+                    Log.d(TAG, "Task created successfully: " + taskId + " with creator: " + currentUserId);
                     onSuccess.onSuccess(taskId);
                 })
                 .addOnFailureListener(e -> {

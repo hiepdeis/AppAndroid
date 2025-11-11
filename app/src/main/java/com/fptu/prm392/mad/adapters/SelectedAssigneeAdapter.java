@@ -11,6 +11,8 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import com.fptu.prm392.mad.R;
 import com.fptu.prm392.mad.models.ProjectMember;
+import com.fptu.prm392.mad.repositories.UserRepository;
+import com.fptu.prm392.mad.utils.AvatarLoader;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -18,9 +20,10 @@ import java.util.List;
 public class SelectedAssigneeAdapter extends RecyclerView.Adapter<SelectedAssigneeAdapter.ViewHolder> {
 
     private List<ProjectMember> selectedMembers;
-    private OnAssigneeRemoveListener removeListener;
-    private OnAssigneeClickListener clickListener;
+    private final OnAssigneeRemoveListener removeListener;
+    private final OnAssigneeClickListener clickListener;
     private boolean isCreator = false;
+    private final UserRepository userRepository;
 
     public interface OnAssigneeRemoveListener {
         void onRemoveAssignee(ProjectMember member, int position);
@@ -39,12 +42,14 @@ public class SelectedAssigneeAdapter extends RecyclerView.Adapter<SelectedAssign
         this.selectedMembers = new ArrayList<>();
         this.removeListener = removeListener;
         this.clickListener = null;
+        this.userRepository = new UserRepository();
     }
 
     public SelectedAssigneeAdapter(OnAssigneeRemoveListener removeListener, OnAssigneeClickListener clickListener) {
         this.selectedMembers = new ArrayList<>();
         this.removeListener = removeListener;
         this.clickListener = clickListener;
+        this.userRepository = new UserRepository();
     }
 
     public void setSelectedMembers(List<ProjectMember> members) {
@@ -99,16 +104,29 @@ public class SelectedAssigneeAdapter extends RecyclerView.Adapter<SelectedAssign
     }
 
     class ViewHolder extends RecyclerView.ViewHolder {
+        ImageView ivAssigneeAvatar;
         TextView tvAssigneeName;
         ImageView btnRemoveAssignee;
 
         public ViewHolder(@NonNull View itemView) {
             super(itemView);
+            ivAssigneeAvatar = itemView.findViewById(R.id.ivAssigneeAvatar);
             tvAssigneeName = itemView.findViewById(R.id.tvAssigneeName);
             btnRemoveAssignee = itemView.findViewById(R.id.btnRemoveAssignee);
         }
 
         public void bind(ProjectMember member) {
+            // Load avatar
+            if (member.getAvatar() != null && !member.getAvatar().isEmpty()) {
+                AvatarLoader.loadAvatar(itemView.getContext(), member.getAvatar(), ivAssigneeAvatar);
+            } else {
+                // Fallback: Load from User repository
+                userRepository.getUserById(member.getUserId(),
+                    user -> AvatarLoader.loadAvatar(itemView.getContext(), user.getAvatar(), ivAssigneeAvatar),
+                    e -> ivAssigneeAvatar.setImageResource(R.drawable.profile)
+                );
+            }
+
             String displayName = member.getFullname() != null && !member.getFullname().isEmpty()
                     ? member.getFullname()
                     : member.getEmail();
@@ -117,9 +135,9 @@ public class SelectedAssigneeAdapter extends RecyclerView.Adapter<SelectedAssign
             // Show/hide remove button based on listener and isCreator
             if (removeListener != null && isCreator) {
                 btnRemoveAssignee.setVisibility(View.VISIBLE);
-                btnRemoveAssignee.setOnClickListener(v -> {
-                    removeListener.onRemoveAssignee(member, getAdapterPosition());
-                });
+                btnRemoveAssignee.setOnClickListener(v ->
+                    removeListener.onRemoveAssignee(member, getBindingAdapterPosition())
+                );
             } else {
                 btnRemoveAssignee.setVisibility(View.GONE);
             }

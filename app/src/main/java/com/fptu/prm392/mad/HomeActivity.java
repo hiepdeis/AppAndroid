@@ -1,6 +1,7 @@
 package com.fptu.prm392.mad;
 
 import android.content.Intent;
+import android.net.Uri;
 import android.os.Bundle;
 import android.view.MenuItem;
 import android.view.View;
@@ -12,6 +13,8 @@ import android.widget.ScrollView;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import androidx.activity.result.ActivityResultLauncher;
+import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.fragment.app.FragmentTransaction;
@@ -25,6 +28,8 @@ import com.fptu.prm392.mad.models.Chat;
 import com.fptu.prm392.mad.models.Project;
 import com.fptu.prm392.mad.models.Task;
 import com.fptu.prm392.mad.repositories.UserRepository;
+import com.fptu.prm392.mad.utils.AvatarLoader;
+import com.fptu.prm392.mad.utils.AvatarManager;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
@@ -33,7 +38,6 @@ import com.google.firebase.auth.FirebaseUser;
 public class HomeActivity extends AppCompatActivity {
 
     private FirebaseAuth mAuth;
-    private Button btnLogout;
     private BottomNavigationView bottomNavigationView;
 
     // Containers
@@ -51,8 +55,12 @@ public class HomeActivity extends AppCompatActivity {
 
     // Repositories
     private UserRepository userRepository;
+    private AvatarManager avatarManager;
 
     private TextView tvTabMessage;
+
+    // Image picker launcher
+    private ActivityResultLauncher<String> imagePickerLauncher;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -61,9 +69,19 @@ public class HomeActivity extends AppCompatActivity {
 
         mAuth = FirebaseAuth.getInstance();
         userRepository = new UserRepository();
+        avatarManager = new AvatarManager(this);
+
+        // Setup image picker launcher
+        imagePickerLauncher = registerForActivityResult(
+            new ActivityResultContracts.GetContent(),
+            uri -> {
+                if (uri != null) {
+                    uploadAvatarImage(uri);
+                }
+            }
+        );
 
         // Initialize views
-        btnLogout = findViewById(R.id.btnLogout);
         bottomNavigationView = findViewById(R.id.bottomNavigationView);
         contentArea = findViewById(R.id.contentArea);
         projectFragmentContainer = findViewById(R.id.projectFragmentContainer);
@@ -149,16 +167,6 @@ public class HomeActivity extends AppCompatActivity {
                     return true;
                 }
                 return false;
-            }
-        });
-
-        // Xử lý đăng xuất
-        btnLogout.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                mAuth.signOut();
-                Toast.makeText(HomeActivity.this, "Đã đăng xuất", Toast.LENGTH_SHORT).show();
-                navigateToLogin();
             }
         });
     }
@@ -258,7 +266,7 @@ public class HomeActivity extends AppCompatActivity {
         chatFragmentContainer.setVisibility(View.GONE);
         otherTabsContainer.setVisibility(View.GONE);
         profileContainer.setVisibility(View.VISIBLE);
-        contentArea.setBackgroundResource(R.drawable.profile_backgrounf);
+        contentArea.setBackgroundResource(R.drawable.profile_background);
         loadUserProfile();
     }
 
@@ -279,13 +287,16 @@ public class HomeActivity extends AppCompatActivity {
 
         String currentUserId = mAuth.getCurrentUser().getUid();
 
-
         // Find profile views
         ImageView ivProfileAvatar = findViewById(R.id.ivProfileAvatar);
+        ImageView btnEditAvatar = findViewById(R.id.btnEditAvatar);
         TextView tvProfileFullname = findViewById(R.id.tvProfileFullname);
         TextView tvProfileEmail = findViewById(R.id.tvProfileEmail);
         Button btnChangePassword = findViewById(R.id.btnChangePassword);
         Button btnProfileSignOut = findViewById(R.id.btnProfileSignOut);
+
+        // Setup edit avatar button
+        btnEditAvatar.setOnClickListener(v -> openImagePicker());
 
         // Setup change password button
         btnChangePassword.setOnClickListener(v -> showChangePasswordDialog());
@@ -303,6 +314,9 @@ public class HomeActivity extends AppCompatActivity {
                 }
 
                 tvProfileEmail.setText(user.getEmail());
+
+                // Load avatar using AvatarLoader
+                AvatarLoader.loadAvatarNoCrop(this, user.getAvatar(), ivProfileAvatar);
             },
             e -> {
                 Toast.makeText(this, "Error loading profile: " + e.getMessage(),
@@ -440,6 +454,61 @@ public class HomeActivity extends AppCompatActivity {
         Toast.makeText(this, "Signed out successfully", Toast.LENGTH_SHORT).show();
     }
 
+    /**
+     * Open image picker to select avatar
+     */
+    private void openImagePicker() {
+        imagePickerLauncher.launch("image/*");
+    }
+
+    /**
+     * Upload selected avatar image to Firebase Storage
+     */
+    private void uploadAvatarImage(Uri imageUri) {
+        String userId = mAuth.getCurrentUser().getUid();
+
+        // Show loading dialog
+        android.app.ProgressDialog progressDialog = new android.app.ProgressDialog(this);
+        progressDialog.setMessage("Uploading avatar...");
+        progressDialog.setCancelable(false);
+        progressDialog.show();
+
+        // Upload to Firebase Storage
+        avatarManager.uploadAvatar(userId, imageUri,
+            downloadUrl -> {
+                // Update Firestore with new avatar URL
+                updateAvatarInFirestore(userId, downloadUrl, progressDialog);
+            },
+            e -> {
+                progressDialog.dismiss();
+                Toast.makeText(this, "Failed to upload avatar: " + e.getMessage(),
+                        Toast.LENGTH_LONG).show();
+            }
+        );
+    }
+
+    /**
+     * Update avatar URL in Firestore
+     */
+    private void updateAvatarInFirestore(String userId, String avatarUrl,
+                                        android.app.ProgressDialog progressDialog) {
+        userRepository.updateUserAvatar(userId, avatarUrl,
+            aVoid -> {
+                progressDialog.dismiss();
+                Toast.makeText(this, "Avatar updated successfully!", Toast.LENGTH_SHORT).show();
+
+                // Reload profile to show new avatar
+                loadUserProfile();
+            },
+            e -> {
+                progressDialog.dismiss();
+                Toast.makeText(this, "Failed to update avatar: " + e.getMessage(),
+                        Toast.LENGTH_LONG).show();
+            }
+        );
+    }
+
+        // Redirect to login screen
     private void showChatTab() {
         projectFragmentContainer.setVisibility(View.GONE);
         taskFragmentContainer.setVisibility(View.GONE);

@@ -16,15 +16,24 @@
         android:padding="12dp"
         android:gravity="center_vertical">
 
-        <!-- User Icon -->
-        <TextView
-            android:layout_width="32dp"
-            android:layout_height="32dp"
-            android:text="👤"
-            android:textSize="20sp"
-            android:gravity="center"
-            android:background="@drawable/bg_status_in_progress"
-            android:paddingTop="4dp" />
+        <!-- Avatar -->
+        <com.google.android.material.card.MaterialCardView
+            android:layout_width="36dp"
+            android:layout_height="36dp"
+            app:cardCornerRadius="18dp"
+            app:cardElevation="0dp"
+            app:strokeWidth="1dp"
+            app:strokeColor="#E0E0E0">
+
+            <ImageView
+                android:id="@+id/ivAssigneeAvatar"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:scaleType="centerCrop"
+                android:src="@drawable/profile"
+                android:contentDescription="Assignee Avatar" />
+
+        </com.google.android.material.card.MaterialCardView>
 
         <TextView
             android:id="@+id/tvAssigneeName"

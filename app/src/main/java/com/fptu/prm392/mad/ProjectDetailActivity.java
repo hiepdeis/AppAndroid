@@ -172,24 +172,24 @@ public class ProjectDetailActivity extends AppCompatActivity {
 
             tvMemberCount.setText(String.valueOf(currentProject.getMemberCount()));
 
-            // Check if current user is the owner (creator) of the project
+            // Check if current user is the manager (creator) of the project
             checkOwnerPermissions();
         }
     }
 
     private void checkOwnerPermissions() {
         String currentUserId = auth.getCurrentUser() != null ? auth.getCurrentUser().getUid() : null;
-        boolean isOwner = currentUserId != null &&
+        boolean isManager = currentUserId != null &&
                          currentProject != null &&
                          currentUserId.equals(currentProject.getCreatedBy());
 
-        // Show/hide Edit button based on owner status
-        btnEdit.setVisibility(isOwner ? View.VISIBLE : View.GONE);
+        // Show/hide Edit button based on manager status
+        btnEdit.setVisibility(isManager ? View.VISIBLE : View.GONE);
 
         // Also check if Delete menu should be shown in the FAB menu
-        // We'll hide the delete option for non-owners
+        // We'll hide the delete option for non-managers
         if (menuDelete != null) {
-            menuDelete.setVisibility(isOwner ? View.VISIBLE : View.GONE);
+            menuDelete.setVisibility(isManager ? View.VISIBLE : View.GONE);
         }
     }
 
@@ -452,7 +452,7 @@ public class ProjectDetailActivity extends AppCompatActivity {
             closeMenu();
         });
 
-        // Check owner permissions now that all views are initialized
+        // Check manager permissions now that all views are initialized
         if (currentProject != null) {
             checkOwnerPermissions();
         }

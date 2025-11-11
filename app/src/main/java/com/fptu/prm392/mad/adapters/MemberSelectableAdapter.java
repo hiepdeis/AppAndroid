@@ -4,6 +4,7 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.CheckBox;
+import android.widget.ImageView;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
@@ -11,6 +12,8 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import com.fptu.prm392.mad.R;
 import com.fptu.prm392.mad.models.ProjectMember;
+import com.fptu.prm392.mad.repositories.UserRepository;
+import com.fptu.prm392.mad.utils.AvatarLoader;
 
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -22,11 +25,13 @@ public class MemberSelectableAdapter extends RecyclerView.Adapter<MemberSelectab
     private List<ProjectMember> allMembers;
     private List<ProjectMember> filteredMembers;
     private Set<String> selectedMemberIds;
+    private final UserRepository userRepository;
 
     public MemberSelectableAdapter() {
         this.allMembers = new ArrayList<>();
         this.filteredMembers = new ArrayList<>();
         this.selectedMemberIds = new HashSet<>();
+        this.userRepository = new UserRepository();
     }
 
     public void setMembers(List<ProjectMember> members) {
@@ -91,17 +96,30 @@ public class MemberSelectableAdapter extends RecyclerView.Adapter<MemberSelectab
 
     class ViewHolder extends RecyclerView.ViewHolder {
         CheckBox cbSelect;
+        ImageView ivMemberAvatar;
         TextView tvMemberName, tvMemberEmail, tvMemberRole;
 
         public ViewHolder(@NonNull View itemView) {
             super(itemView);
             cbSelect = itemView.findViewById(R.id.cbSelect);
+            ivMemberAvatar = itemView.findViewById(R.id.ivMemberAvatar);
             tvMemberName = itemView.findViewById(R.id.tvMemberName);
             tvMemberEmail = itemView.findViewById(R.id.tvMemberEmail);
             tvMemberRole = itemView.findViewById(R.id.tvMemberRole);
         }
 
         public void bind(ProjectMember member) {
+            // Load avatar
+            if (member.getAvatar() != null && !member.getAvatar().isEmpty()) {
+                AvatarLoader.loadAvatar(itemView.getContext(), member.getAvatar(), ivMemberAvatar);
+            } else {
+                // Fallback: Load from User repository
+                userRepository.getUserById(member.getUserId(),
+                    user -> AvatarLoader.loadAvatar(itemView.getContext(), user.getAvatar(), ivMemberAvatar),
+                    e -> ivMemberAvatar.setImageResource(R.drawable.profile)
+                );
+            }
+
             String displayName = member.getFullname() != null && !member.getFullname().isEmpty()
                     ? member.getFullname()
                     : "No name";
@@ -111,7 +129,7 @@ public class MemberSelectableAdapter extends RecyclerView.Adapter<MemberSelectab
             // Set role
             String role = member.getProjectRole();
             tvMemberRole.setText(capitalizeFirst(role));
-            if ("owner".equals(role)) {
+            if ("manager".equals(role)) {
                 tvMemberRole.setBackgroundResource(R.drawable.bg_status_done);
             } else if ("admin".equals(role)) {
                 tvMemberRole.setBackgroundResource(R.drawable.bg_status_in_progress);
