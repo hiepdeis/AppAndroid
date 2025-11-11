@@ -30,6 +30,7 @@ import com.fptu.prm392.mad.repositories.ProjectRepository;
 import com.fptu.prm392.mad.repositories.TaskRepository;
 import com.google.firebase.auth.FirebaseAuth;
 
+import java.util.ArrayList;
 import java.util.List;
 
 public class ProjectListFragment extends Fragment {
@@ -193,20 +194,44 @@ public class ProjectListFragment extends Fragment {
         });
         rvSearchProjects.setAdapter(searchAdapter);
 
-        // Load all projects
-        projectRepository.getAllProjects(
-            projects -> {
-                if (projects.isEmpty()) {
-                    rvSearchProjects.setVisibility(View.GONE);
-                    tvEmptyProjects.setVisibility(View.VISIBLE);
-                } else {
-                    rvSearchProjects.setVisibility(View.VISIBLE);
-                    tvEmptyProjects.setVisibility(View.GONE);
-                    searchAdapter.setProjects(projects);
+        // Load all projects, excluding projects user already joined
+        projectRepository.getMyProjects(
+            myProjects -> {
+                // Get list of project IDs user already joined
+                List<String> myProjectIds = new ArrayList<>();
+                for (Project p : myProjects) {
+                    myProjectIds.add(p.getProjectId());
                 }
+
+                // Load all projects and filter out joined ones
+                projectRepository.getAllProjects(
+                    allProjects -> {
+                        // Filter out projects user already joined
+                        List<Project> availableProjects = new ArrayList<>();
+                        for (Project project : allProjects) {
+                            if (!myProjectIds.contains(project.getProjectId())) {
+                                availableProjects.add(project);
+                            }
+                        }
+
+                        if (availableProjects.isEmpty()) {
+                            rvSearchProjects.setVisibility(View.GONE);
+                            tvEmptyProjects.setVisibility(View.VISIBLE);
+                            tvEmptyProjects.setText("No available projects to join");
+                        } else {
+                            rvSearchProjects.setVisibility(View.VISIBLE);
+                            tvEmptyProjects.setVisibility(View.GONE);
+                            searchAdapter.setProjects(availableProjects);
+                        }
+                    },
+                    e -> {
+                        Toast.makeText(getContext(), "Error loading projects: " + e.getMessage(),
+                            Toast.LENGTH_SHORT).show();
+                    }
+                );
             },
             e -> {
-                Toast.makeText(getContext(), "Error loading projects: " + e.getMessage(),
+                Toast.makeText(getContext(), "Error loading your projects: " + e.getMessage(),
                     Toast.LENGTH_SHORT).show();
             }
         );

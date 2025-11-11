@@ -24,9 +24,9 @@ import java.util.Locale;
 public class ChatListAdapter extends RecyclerView.Adapter<ChatListAdapter.ChatViewHolder> {
 
     private List<Chat> chats;
-    private OnChatClickListener listener;
-    private UserRepository userRepository;
-    private String currentUserId;
+    private final OnChatClickListener listener;
+    private final UserRepository userRepository;
+    private final String currentUserId;
     private final SimpleDateFormat timeFormat = new SimpleDateFormat("HH:mm", Locale.getDefault());
     private final SimpleDateFormat dateFormat = new SimpleDateFormat("dd/MM/yyyy", Locale.getDefault());
 
@@ -90,19 +90,22 @@ public class ChatListAdapter extends RecyclerView.Adapter<ChatListAdapter.ChatVi
         public void bind(Chat chat) {
             // Set icon based on chat type
             if (isOneOnOneChat(chat)) {
-                // Solo 1-1 chat: Load avatar of other user
+                // Solo 1-1 chat: Load avatar and name of other user
                 String otherUserId = getOtherUserId(chat);
                 if (otherUserId != null) {
                     loadUserAvatar(otherUserId);
+                    // Load and display other user's name
+                    loadUserName(otherUserId);
                 } else {
                     ivChatIcon.setImageResource(R.drawable.profile);
+                    tvProjectName.setText(chat.getProjectName());
                 }
             } else {
                 // Group chat: Use group chat icon
                 ivChatIcon.setImageResource(R.drawable.group_chat_avatar);
+                // Display project/group name
+                tvProjectName.setText(chat.getProjectName());
             }
-
-            tvProjectName.setText(chat.getProjectName());
 
             // Display last message
             if (chat.getLastMessage() != null && !chat.getLastMessage().isEmpty()) {
@@ -165,6 +168,24 @@ public class ChatListAdapter extends RecyclerView.Adapter<ChatListAdapter.ChatVi
                 e -> {
                     // On error, show default avatar
                     ivChatIcon.setImageResource(R.drawable.profile);
+                }
+            );
+        }
+
+        private void loadUserName(String userId) {
+            // Load user name from User collection
+            userRepository.getUserById(userId,
+                user -> {
+                    // Display other user's name
+                    if (user.getFullname() != null && !user.getFullname().isEmpty()) {
+                        tvProjectName.setText(user.getFullname());
+                    } else {
+                        tvProjectName.setText(user.getEmail());
+                    }
+                },
+                e -> {
+                    // On error, use projectName as fallback
+                    // This shouldn't happen, but just in case
                 }
             );
         }

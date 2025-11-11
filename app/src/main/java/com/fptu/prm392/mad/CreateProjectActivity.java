@@ -4,6 +4,7 @@ import android.os.Bundle;
 import android.text.TextUtils;
 import android.view.View;
 import android.widget.Button;
+import android.widget.ImageView;
 import android.widget.ProgressBar;
 import android.widget.Toast;
 
@@ -14,6 +15,7 @@ import com.google.android.material.textfield.TextInputEditText;
 
 public class CreateProjectActivity extends AppCompatActivity {
 
+    private ImageView btnBack;
     private TextInputEditText etProjectName, etProjectDescription;
     private Button btnCreateProject;
     private ProgressBar progressBar;
@@ -28,10 +30,14 @@ public class CreateProjectActivity extends AppCompatActivity {
         projectRepository = new ProjectRepository();
 
         // Ánh xạ các view
+        btnBack = findViewById(R.id.btnBack);
         etProjectName = findViewById(R.id.etProjectName);
         etProjectDescription = findViewById(R.id.etProjectDescription);
         btnCreateProject = findViewById(R.id.btnCreateProject);
         progressBar = findViewById(R.id.progressBar);
+
+        // Xử lý nút back
+        btnBack.setOnClickListener(v -> finish());
 
         // Xử lý sự kiện khi bấm nút "Tạo Project"
         btnCreateProject.setOnClickListener(new View.OnClickListener() {
@@ -96,7 +102,7 @@ public class CreateProjectActivity extends AppCompatActivity {
                 btnCreateProject.setEnabled(true);
 
                 Toast.makeText(CreateProjectActivity.this,
-                    "❌ Lỗi: " + e.getMessage(),
+                    " Lỗi: " + e.getMessage(),
                     Toast.LENGTH_LONG).show();
             }
         );

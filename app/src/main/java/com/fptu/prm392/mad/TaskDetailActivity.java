@@ -498,34 +498,67 @@ public class TaskDetailActivity extends AppCompatActivity {
         projectRepository.getProjectMembers(currentTask.getProjectId(),
                 members -> {
                     // Filter out already assigned members
-                    List<com.fptu.prm392.mad.models.User> availableUsers = new ArrayList<>();
                     List<String> currentAssignees = currentTask.getAssignees() != null
                             ? currentTask.getAssignees() : new ArrayList<>();
 
+                    List<String> availableUserIds = new ArrayList<>();
                     for (ProjectMember member : members) {
                         if (!currentAssignees.contains(member.getUserId())) {
-                            // Convert ProjectMember to User
-                            com.fptu.prm392.mad.models.User user = new com.fptu.prm392.mad.models.User();
-                            user.setUserId(member.getUserId());
-                            user.setFullname(member.getFullname());
-                            user.setEmail(member.getEmail());
-                            availableUsers.add(user);
+                            availableUserIds.add(member.getUserId());
                         }
                     }
 
-                    if (availableUsers.isEmpty()) {
+                    if (availableUserIds.isEmpty()) {
                         recyclerView.setVisibility(View.GONE);
                         emptyView.setVisibility(View.VISIBLE);
                         emptyView.setText("All project members are already assigned");
                     } else {
-                        recyclerView.setVisibility(View.VISIBLE);
-                        emptyView.setVisibility(View.GONE);
-                        adapter.setUsers(availableUsers);
+                        // Load full user data from User collection to get latest avatar
+                        loadUsersData(availableUserIds, adapter, recyclerView, emptyView);
                     }
                 },
                 e -> Toast.makeText(this, "Error loading members: " + e.getMessage(),
                         Toast.LENGTH_SHORT).show()
         );
+    }
+
+    private void loadUsersData(List<String> userIds, com.fptu.prm392.mad.adapters.AddUserAdapter adapter,
+                               RecyclerView recyclerView, TextView emptyView) {
+        List<com.fptu.prm392.mad.models.User> users = new ArrayList<>();
+        com.fptu.prm392.mad.repositories.UserRepository userRepository = new com.fptu.prm392.mad.repositories.UserRepository();
+
+        // Counter to track completed queries
+        final int[] loadedCount = {0};
+
+        for (String userId : userIds) {
+            userRepository.getUserById(userId,
+                user -> {
+                    users.add(user);
+                    loadedCount[0]++;
+
+                    // When all users are loaded, update adapter
+                    if (loadedCount[0] == userIds.size()) {
+                        recyclerView.setVisibility(View.VISIBLE);
+                        emptyView.setVisibility(View.GONE);
+                        adapter.setUsers(users);
+                    }
+                },
+                e -> {
+                    // On error, still increment counter to avoid hanging
+                    loadedCount[0]++;
+                    if (loadedCount[0] == userIds.size()) {
+                        if (users.isEmpty()) {
+                            recyclerView.setVisibility(View.GONE);
+                            emptyView.setVisibility(View.VISIBLE);
+                        } else {
+                            recyclerView.setVisibility(View.VISIBLE);
+                            emptyView.setVisibility(View.GONE);
+                            adapter.setUsers(users);
+                        }
+                    }
+                }
+            );
+        }
     }
 
     private void addAssigneeToTask(com.fptu.prm392.mad.models.User user, android.app.Dialog dialog) {

@@ -13,6 +13,7 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import com.fptu.prm392.mad.R;
 import com.fptu.prm392.mad.models.User;
+import com.fptu.prm392.mad.utils.AvatarLoader;
 
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -105,10 +106,10 @@ public class AddUserAdapter extends RecyclerView.Adapter<AddUserAdapter.UserView
     }
 
     class UserViewHolder extends RecyclerView.ViewHolder {
-        private ImageView ivUserAvatar;
-        private TextView tvUserName;
-        private TextView tvUserEmail;
-        private CheckBox cbSelectUser;
+        private final ImageView ivUserAvatar;
+        private final TextView tvUserName;
+        private final TextView tvUserEmail;
+        private final CheckBox cbSelectUser;
 
         public UserViewHolder(@NonNull View itemView) {
             super(itemView);
@@ -119,6 +120,9 @@ public class AddUserAdapter extends RecyclerView.Adapter<AddUserAdapter.UserView
         }
 
         public void bind(User user) {
+            // Load avatar using AvatarLoader
+            AvatarLoader.loadAvatar(itemView.getContext(), user.getAvatar(), ivUserAvatar);
+
             // Set user info
             if (user.getFullname() != null && !user.getFullname().isEmpty()) {
                 tvUserName.setText(user.getFullname());
