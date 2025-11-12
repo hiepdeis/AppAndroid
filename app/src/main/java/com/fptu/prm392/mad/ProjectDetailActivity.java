@@ -279,6 +279,47 @@ public class ProjectDetailActivity extends AppCompatActivity {
                 currentProject.setName(newName);
                 currentProject.setDescription(newDescription);
 
+                // Send notifications to all project members
+                projectRepository.getProjectMembers(projectId,
+                    members -> {
+                        String updateMessage = "";
+                        if (nameChanged && descChanged) {
+                            updateMessage = "Tên và mô tả project đã được cập nhật";
+                        } else if (nameChanged) {
+                            updateMessage = "Tên project đã được đổi thành: " + newName;
+                        } else if (descChanged) {
+                            updateMessage = "Mô tả project đã được cập nhật";
+                        }
+
+                        String finalMessage = updateMessage;
+                        String currentUserId = auth.getCurrentUser().getUid();
+                        for (ProjectMember member : members) {
+                            // Don't notify the person who made the update
+                            if (!member.getUserId().equals(currentUserId)) {
+                                notificationRepository.saveNotificationToFirestore(
+                                    member.getUserId(),
+                                    "project_updated",
+                                    "Project đã được cập nhật",
+                                    finalMessage,
+                                    projectId,
+                                    null,
+                                    notificationId -> {},
+                                    e -> {}
+                                );
+                            }
+                        }
+
+                        // Show local notification
+                        showLocalNotification("Cập nhật project",
+                            updateMessage,
+                            projectId);
+                    },
+                    e -> {
+                        // Ignore error, just log
+                        Log.e("ProjectDetail", "Error loading members for notification: " + e.getMessage());
+                    }
+                );
+
                 // Update UI
                 displayProjectInfo();
                 exitEditMode();
@@ -775,6 +816,25 @@ public class ProjectDetailActivity extends AppCompatActivity {
         projectRepository.removeMemberFromProject(projectId, member.getUserId(),
             aVoid -> {
                 Toast.makeText(this, "Member removed successfully", Toast.LENGTH_SHORT).show();
+                
+                // Save notification to Firestore for the removed member
+                String projectName = currentProject != null ? currentProject.getName() : "project";
+                notificationRepository.saveNotificationToFirestore(
+                    member.getUserId(),
+                    "member_removed",
+                    "Xóa khỏi project",
+                    "Bạn đã bị xóa khỏi project: " + projectName,
+                    projectId,
+                    null,
+                    notificationId -> {},
+                    e -> {}
+                );
+                
+                showLocalNotification("Xóa thành viên",
+                    "Đã xóa " + (member.getFullname() != null && !member.getFullname().isEmpty() 
+                        ? member.getFullname() : member.getEmail()) + " khỏi project",
+                    projectId);
+                
                 // Reload members in dialog
                 RecyclerView rvMembers = parentDialog.findViewById(R.id.rvMembers);
                 if (rvMembers != null && rvMembers.getAdapter() instanceof MemberAdapter) {
@@ -918,17 +978,53 @@ public class ProjectDetailActivity extends AppCompatActivity {
     }
 
     private void deleteProjectDocument(android.app.ProgressDialog progressDialog) {
-        // Finally delete the project document
-        projectRepository.deleteProject(projectId,
-            aVoid -> {
-                progressDialog.dismiss();
-                Toast.makeText(this, "Project deleted successfully", Toast.LENGTH_SHORT).show();
-                // Go back to home
-                finish();
+        // Get project members before deleting to send notifications
+        projectRepository.getProjectMembers(projectId,
+            members -> {
+                String projectName = currentProject != null ? currentProject.getName() : "project";
+                
+                // Send notifications to all members before deleting
+                for (ProjectMember member : members) {
+                    notificationRepository.saveNotificationToFirestore(
+                        member.getUserId(),
+                        "project_deleted",
+                        "Project đã bị xóa",
+                        "Project '" + projectName + "' đã bị xóa",
+                        null, // No projectId since it's deleted
+                        null,
+                        notificationId -> {},
+                        e -> {}
+                    );
+                }
+
+                // Finally delete the project document
+                projectRepository.deleteProject(projectId,
+                    aVoid -> {
+                        progressDialog.dismiss();
+                        Toast.makeText(this, "Project deleted successfully", Toast.LENGTH_SHORT).show();
+                        // Go back to home
+                        finish();
+                    },
+                    e -> {
+                        progressDialog.dismiss();
+                        Toast.makeText(this, "Error deleting project: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+                    }
+                );
             },
             e -> {
-                progressDialog.dismiss();
-                Toast.makeText(this, "Error deleting project: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+                // If error loading members, still delete project
+                Log.e("ProjectDetail", "Error loading members for notification: " + e.getMessage());
+                projectRepository.deleteProject(projectId,
+                    aVoid -> {
+                        progressDialog.dismiss();
+                        Toast.makeText(this, "Project deleted successfully", Toast.LENGTH_SHORT).show();
+                        finish();
+                    },
+                    e2 -> {
+                        progressDialog.dismiss();
+                        Toast.makeText(this, "Error deleting project: " + e2.getMessage(), Toast.LENGTH_SHORT).show();
+                    }
+                );
             }
         );
     }

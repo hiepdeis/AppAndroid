@@ -78,8 +78,7 @@ public class NotificationRepository {
 
         db.collection(COLLECTION_NOTIFICATIONS)
             .whereEqualTo("userId", currentUserId)
-            .limit(50) // Giới hạn 50 notifications gần nhất
-            .get()
+            .get() // Lấy tất cả để đảm bảo không bỏ sót notifications mới
             .addOnSuccessListener(queryDocumentSnapshots -> {
                 List<Notification> notifications = new ArrayList<>();
                 for (DocumentSnapshot doc : queryDocumentSnapshots) {
@@ -96,6 +95,10 @@ public class NotificationRepository {
                     if (n2.getCreatedAt() == null) return -1;
                     return n2.getCreatedAt().compareTo(n1.getCreatedAt()); // Descending
                 });
+                // Limit to 50 most recent after sorting
+                if (notifications.size() > 50) {
+                    notifications = notifications.subList(0, 50);
+                }
                 Log.d(TAG, "Found " + notifications.size() + " notifications");
                 if (onSuccess != null) {
                     onSuccess.onSuccess(notifications);

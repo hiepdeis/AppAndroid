@@ -457,6 +457,41 @@ public class TaskDetailActivity extends AppCompatActivity {
                 currentTask.setTitle(newTitle);
                 currentTask.setDescription(newDescription);
 
+                // Send notifications to all assignees
+                if (currentTask != null && currentTask.getAssignees() != null && !currentTask.getAssignees().isEmpty()) {
+                    String updateMessage = "";
+                    if (titleChanged && descChanged) {
+                        updateMessage = "Tiêu đề và mô tả task đã được cập nhật";
+                    } else if (titleChanged) {
+                        updateMessage = "Tiêu đề task đã được đổi thành: " + newTitle;
+                    } else if (descChanged) {
+                        updateMessage = "Mô tả task đã được cập nhật";
+                    }
+
+                    String finalMessage = updateMessage;
+                    String projectId = currentTask.getProjectId();
+                    for (String assigneeId : currentTask.getAssignees()) {
+                        // Don't notify the person who made the update
+                        if (!assigneeId.equals(currentUserId)) {
+                            notificationRepository.saveNotificationToFirestore(
+                                assigneeId,
+                                "task_updated",
+                                "Task đã được cập nhật",
+                                finalMessage,
+                                projectId,
+                                taskId,
+                                notificationId -> {},
+                                e -> {}
+                            );
+                        }
+                    }
+
+                    // Show local notification
+                    showLocalNotification("Cập nhật task",
+                        updateMessage,
+                        projectId);
+                }
+
                 // Update UI
                 displayTaskDetails();
                 exitEditMode();

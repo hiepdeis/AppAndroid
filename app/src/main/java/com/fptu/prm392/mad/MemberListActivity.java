@@ -159,6 +159,19 @@ public class MemberListActivity extends AppCompatActivity {
         projectRepository.removeMemberFromProject(projectId, member.getUserId(),
             aVoid -> {
                 Toast.makeText(this, "Member removed successfully", Toast.LENGTH_SHORT).show();
+                
+                // Save notification to Firestore for the removed member
+                notificationRepository.saveNotificationToFirestore(
+                    member.getUserId(),
+                    "member_removed",
+                    "Xóa khỏi project",
+                    "Bạn đã bị xóa khỏi project: " + (projectName != null ? projectName : "project"),
+                    projectId,
+                    null,
+                    notificationId -> {},
+                    e -> {}
+                );
+                
                 loadProjectMembers();
                 showLocalNotification("Xóa thành viên",
                     "Đã xóa " + displayName(member) + " khỏi project",

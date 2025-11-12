@@ -117,6 +117,10 @@ public class NotificationAdapter extends RecyclerView.Adapter<NotificationAdapte
                     return "➖";
                 case "project_created":
                     return "📁";
+                case "project_updated":
+                    return "✏️";
+                case "project_deleted":
+                    return "🗑️";
                 case "sync_success":
                     return "✅";
                 default:

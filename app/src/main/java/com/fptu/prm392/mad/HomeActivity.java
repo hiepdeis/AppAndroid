@@ -199,22 +199,6 @@ public class HomeActivity extends AppCompatActivity {
             }
         });
 
-        // Đăng xuất
-        btnLogout.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                signOut();
-            }
-        });
-
-        // Tạo project mới
-        fabCreateProject.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                Intent intent = new Intent(HomeActivity.this, CreateProjectActivity.class);
-                startActivity(intent);
-            }
-        });
     }
 
     private void requestNotificationPermission() {
@@ -330,7 +314,6 @@ public class HomeActivity extends AppCompatActivity {
         notificationFragmentContainer.setVisibility(View.GONE);
         otherTabsContainer.setVisibility(View.GONE);
         profileContainer.setVisibility(View.GONE);
-        fabCreateProject.setVisibility(View.GONE);
         contentArea.setBackgroundResource(R.drawable.chat_background);
 
         showChatListFragment();
@@ -343,7 +326,6 @@ public class HomeActivity extends AppCompatActivity {
         notificationFragmentContainer.setVisibility(View.VISIBLE);
         otherTabsContainer.setVisibility(View.GONE);
         profileContainer.setVisibility(View.GONE);
-        fabCreateProject.setVisibility(View.GONE);
         contentArea.setBackgroundResource(R.drawable.img_3);
 
         FragmentTransaction transaction = getSupportFragmentManager().beginTransaction();
@@ -356,6 +338,18 @@ public class HomeActivity extends AppCompatActivity {
         transaction.replace(R.id.chatFragmentContainer, chatListFragment);
         transaction.commit();
         bottomNavigationView.setVisibility(View.VISIBLE);
+    }
+
+    private void openChatDetail(Chat chat) {
+        chatDetailFragment = ChatDetailFragment.newInstance(chat.getChatId(), chat.getProjectName());
+        chatDetailFragment.setOnBackToChatsListener(this::showChatListFragment);
+
+        FragmentTransaction transaction = getSupportFragmentManager().beginTransaction();
+        transaction.replace(R.id.chatFragmentContainer, chatDetailFragment);
+        transaction.addToBackStack(null);
+        transaction.commit();
+
+        bottomNavigationView.setVisibility(View.GONE);
     }
 
     private void openProjectDetail(Project project) {
@@ -594,82 +588,6 @@ public class HomeActivity extends AppCompatActivity {
                         Toast.LENGTH_LONG).show();
             }
         );
-    }
-
-        // Redirect to login screen
-    private void showChatTab() {
-        projectFragmentContainer.setVisibility(View.GONE);
-        taskFragmentContainer.setVisibility(View.GONE);
-        calendarFragmentContainer.setVisibility(View.GONE);
-        chatFragmentContainer.setVisibility(View.VISIBLE);
-        otherTabsContainer.setVisibility(View.GONE);
-        profileContainer.setVisibility(View.GONE);
-        contentArea.setBackgroundResource(R.drawable.chat_background);
-
-        // Show chat list fragment
-        showChatListFragment();
-    }
-
-    private void showChatListFragment() {
-        FragmentTransaction transaction = getSupportFragmentManager().beginTransaction();
-        transaction.replace(R.id.chatFragmentContainer, chatListFragment);
-        transaction.commit();
-
-        // Hiện lại bottom nav bar
-        bottomNavigationView.setVisibility(View.VISIBLE);
-    }
-
-    private void openChatDetail(Chat chat) {
-        chatDetailFragment = ChatDetailFragment.newInstance(chat.getChatId(), chat.getProjectName());
-        chatDetailFragment.setOnBackToChatsListener(this::showChatListFragment);
-
-        FragmentTransaction transaction = getSupportFragmentManager().beginTransaction();
-        transaction.replace(R.id.chatFragmentContainer, chatDetailFragment);
-        transaction.addToBackStack(null);
-        transaction.commit();
-
-        bottomNavigationView.setVisibility(View.GONE);
-    }
-
-    private void loadUserProfile() {
-        if (mAuth.getCurrentUser() == null) return;
-
-        String currentUserId = mAuth.getCurrentUser().getUid();
-
-        ImageView ivProfileAvatar = findViewById(R.id.ivProfileAvatar);
-        TextView tvProfileFullname = findViewById(R.id.tvProfileFullname);
-        TextView tvProfileEmail = findViewById(R.id.tvProfileEmail);
-        Button btnProfileSignOut = findViewById(R.id.btnProfileSignOut);
-
-        btnProfileSignOut.setOnClickListener(v -> showSignOutConfirmation());
-
-        userRepository.getUserById(currentUserId,
-            user -> {
-                if (user.getFullname() != null && !user.getFullname().isEmpty()) {
-                    tvProfileFullname.setText(user.getFullname());
-                } else {
-                    tvProfileFullname.setText("No name");
-                }
-                tvProfileEmail.setText(user.getEmail());
-                // TODO: hiển thị avatar nếu có
-            },
-            e -> Toast.makeText(this, "Error loading profile: " + e.getMessage(),
-                Toast.LENGTH_SHORT).show());
-    }
-
-    private void showSignOutConfirmation() {
-        new androidx.appcompat.app.AlertDialog.Builder(this)
-            .setTitle("Sign Out")
-            .setMessage("Are you sure you want to sign out?")
-            .setPositiveButton("Sign Out", (dialog, which) -> signOut())
-            .setNegativeButton("Cancel", null)
-            .show();
-    }
-
-    private void signOut() {
-        mAuth.signOut();
-        navigateToLogin();
-        Toast.makeText(this, "Signed out successfully", Toast.LENGTH_SHORT).show();
     }
 
     private void setupNetworkMonitor() {

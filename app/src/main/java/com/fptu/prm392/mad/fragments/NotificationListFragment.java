@@ -31,6 +31,7 @@ public class NotificationListFragment extends Fragment {
     private NotificationAdapter notificationAdapter;
     private LinearLayout emptyState;
     private TextView tvMarkAllRead;
+    private TextView tvUnreadCount;
 
     private NotificationRepository notificationRepository;
     private FirebaseAuth mAuth;
@@ -54,6 +55,7 @@ public class NotificationListFragment extends Fragment {
         recyclerViewNotifications = view.findViewById(R.id.recyclerViewNotifications);
         emptyState = view.findViewById(R.id.emptyState);
         tvMarkAllRead = view.findViewById(R.id.tvMarkAllRead);
+        tvUnreadCount = view.findViewById(R.id.tvUnreadCount);
 
         // Setup RecyclerView
         recyclerViewNotifications.setLayoutManager(new LinearLayoutManager(getContext()));
@@ -103,10 +105,20 @@ public class NotificationListFragment extends Fragment {
                 if (notifications.isEmpty()) {
                     emptyState.setVisibility(View.VISIBLE);
                     recyclerViewNotifications.setVisibility(View.GONE);
+                    updateUnreadCount(0);
                 } else {
                     emptyState.setVisibility(View.GONE);
                     recyclerViewNotifications.setVisibility(View.VISIBLE);
                     notificationAdapter.setNotifications(notifications);
+                    
+                    // Count unread notifications
+                    int unreadCount = 0;
+                    for (Notification notification : notifications) {
+                        if (!notification.isRead()) {
+                            unreadCount++;
+                        }
+                    }
+                    updateUnreadCount(unreadCount);
                 }
             },
             e -> {
@@ -116,6 +128,17 @@ public class NotificationListFragment extends Fragment {
                 }
             }
         );
+    }
+
+    private void updateUnreadCount(int count) {
+        if (tvUnreadCount != null) {
+            if (count > 0) {
+                tvUnreadCount.setText(String.valueOf(count));
+                tvUnreadCount.setVisibility(View.VISIBLE);
+            } else {
+                tvUnreadCount.setVisibility(View.GONE);
+            }
+        }
     }
 
     private void navigateToNotificationTarget(Notification notification) {

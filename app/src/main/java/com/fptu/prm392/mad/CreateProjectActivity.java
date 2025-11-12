@@ -10,10 +10,13 @@ import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
 
+import com.fptu.prm392.mad.repositories.NotificationRepository;
 import com.fptu.prm392.mad.repositories.ProjectRepository;
 import com.fptu.prm392.mad.utils.NetworkMonitor;
+import com.fptu.prm392.mad.utils.NotificationHelper;
 import com.fptu.prm392.mad.utils.SyncStatusMonitor;
 import com.google.android.material.textfield.TextInputEditText;
+import com.google.firebase.auth.FirebaseAuth;
 
 public class CreateProjectActivity extends AppCompatActivity {
 
@@ -22,6 +25,7 @@ public class CreateProjectActivity extends AppCompatActivity {
     private Button btnCreateProject;
     private ProgressBar progressBar;
     private ProjectRepository projectRepository;
+    private NotificationRepository notificationRepository;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -30,6 +34,7 @@ public class CreateProjectActivity extends AppCompatActivity {
 
         // Khởi tạo Repository - Firestore tự động kết nối ở đây
         projectRepository = new ProjectRepository();
+        notificationRepository = new NotificationRepository();
 
         // Ánh xạ các view
         btnBack = findViewById(R.id.btnBack);
@@ -105,6 +110,28 @@ public class CreateProjectActivity extends AppCompatActivity {
                     Toast.makeText(CreateProjectActivity.this,
                         "Project created successfully!",
                         Toast.LENGTH_SHORT).show();
+                }
+
+                // Save notification to Firestore for the creator
+                String currentUserId = FirebaseAuth.getInstance().getCurrentUser().getUid();
+                notificationRepository.saveNotificationToFirestore(
+                    currentUserId,
+                    "project_created",
+                    "Project mới được tạo",
+                    "Bạn đã tạo project: " + projectName,
+                    projectId,
+                    null,
+                    notificationId -> {},
+                    e -> {}
+                );
+
+                // Show local notification
+                NotificationHelper.createNotificationChannel(this);
+                if (NotificationHelper.isNotificationPermissionGranted(this)) {
+                    NotificationHelper.showNotification(this,
+                        "Project mới",
+                        "Project '" + projectName + "' đã được tạo thành công",
+                        projectId);
                 }
 
                 // Chuyển đến ProjectDetailActivity
