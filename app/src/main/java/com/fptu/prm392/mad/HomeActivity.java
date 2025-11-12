@@ -144,8 +144,6 @@ public class HomeActivity extends AppCompatActivity {
         // Check if opened from Project/Task chat button
         handleIncomingIntent();
 
-        // Check for rejection notifications
-        checkRejectionNotifications();
 
         // Tự động chọn tab Project khi vào màn hình (nếu không có intent đặc biệt)
         if (!getIntent().hasExtra("OPEN_CHAT_ID")) {
@@ -230,6 +228,9 @@ public class HomeActivity extends AppCompatActivity {
         }
     }
 
+    // NOTE: Rejection notifications giờ hiển thị realtime trong NotificationsFragment
+    // Không cần check khi mở app nữa
+    /*
     private void checkRejectionNotifications() {
         if (mAuth.getCurrentUser() == null) return;
 
@@ -264,6 +265,7 @@ public class HomeActivity extends AppCompatActivity {
                 android.util.Log.e("HomeActivity", "Error checking rejection notifications", e);
             });
     }
+    */
 
     private void handleIncomingIntent() {
         Intent intent = getIntent();

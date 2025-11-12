@@ -721,11 +721,11 @@ public class ProjectDetailActivity extends AppCompatActivity {
                         null, // requestId will be generated
                         projectId,
                         currentProject.getName(),
-                        user.getUserId(),
+                        user.getUserId(),        // requesterId = user được mời
                         user.getFullname(),
                         user.getEmail(),
                         user.getAvatar(),
-                        user.getUserId(), // managerId = userId (user nhận invitation)
+                        currentProject.getCreatedBy(), // managerId = manager thật sự (người gửi lời mời)
                         "invitation" // manager mời user vào project
                     );
 

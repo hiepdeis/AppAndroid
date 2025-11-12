@@ -1,54 +1,124 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:orientation="vertical"
-    android:background="@drawable/profile_background">
+    android:background="@drawable/profile_background"
+    android:fillViewport="true">
 
-    <!-- Header -->
-    <TextView
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="Join Requests"
-        android:textSize="24sp"
-        android:textStyle="bold"
-        android:textColor="#333333"
-        android:padding="16dp" />
-
-    <!-- RecyclerView for Requests -->
-    <androidx.recyclerview.widget.RecyclerView
-        android:id="@+id/rvJoinRequests"
-        android:layout_width="match_parent"
-        android:layout_height="0dp"
-        android:layout_weight="1"
-        android:clipToPadding="false"
-        android:paddingBottom="16dp" />
-
-    <!-- Empty State -->
     <LinearLayout
-        android:id="@+id/emptyState"
         android:layout_width="match_parent"
-        android:layout_height="0dp"
-        android:layout_weight="1"
-        android:orientation="vertical"
-        android:gravity="center"
-        android:visibility="gone">
+        android:layout_height="wrap_content"
+        android:orientation="vertical">
 
-        <TextView
-            android:layout_width="wrap_content"
+        <!-- Section 1: Join Requests -->
+        <LinearLayout
+            android:id="@+id/sectionJoinRequests"
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="🔔"
-            android:textSize="64sp" />
+            android:orientation="vertical">
 
-        <TextView
-            android:layout_width="wrap_content"
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Join Requests"
+                android:textSize="24sp"
+                android:textStyle="bold"
+                android:textColor="#333333"
+                android:padding="16dp" />
+
+            <androidx.recyclerview.widget.RecyclerView
+                android:id="@+id/rvJoinRequests"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:clipToPadding="false"
+                android:nestedScrollingEnabled="false"
+                android:paddingBottom="8dp" />
+
+            <TextView
+                android:id="@+id/tvEmptyJoinRequests"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="No pending join requests"
+                android:textSize="14sp"
+                android:textColor="#999999"
+                android:padding="16dp"
+                android:gravity="center"
+                android:visibility="gone" />
+
+        </LinearLayout>
+
+        <!-- Divider -->
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="1dp"
+            android:background="#E0E0E0"
+            android:layout_marginTop="8dp"
+            android:layout_marginBottom="8dp" />
+
+        <!-- Section 2: Rejection Notifications -->
+        <LinearLayout
+            android:id="@+id/sectionRejectionNotifications"
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="No pending requests"
-            android:textSize="18sp"
-            android:textColor="#999999"
-            android:layout_marginTop="16dp" />
+            android:orientation="vertical">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Recent Notifications"
+                android:textSize="24sp"
+                android:textStyle="bold"
+                android:textColor="#333333"
+                android:padding="16dp" />
+
+            <androidx.recyclerview.widget.RecyclerView
+                android:id="@+id/rvRejectionNotifications"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:clipToPadding="false"
+                android:nestedScrollingEnabled="false"
+                android:paddingBottom="16dp" />
+
+            <TextView
+                android:id="@+id/tvEmptyNotifications"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="No recent notifications"
+                android:textSize="14sp"
+                android:textColor="#999999"
+                android:padding="16dp"
+                android:gravity="center"
+                android:visibility="gone" />
+
+        </LinearLayout>
+
+        <!-- Global Empty State (when both sections are empty) -->
+        <LinearLayout
+            android:id="@+id/emptyState"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:orientation="vertical"
+            android:gravity="center"
+            android:padding="32dp"
+            android:visibility="gone">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="🔔"
+                android:textSize="64sp" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="No notifications"
+                android:textSize="18sp"
+                android:textColor="#999999"
+                android:layout_marginTop="16dp" />
+
+        </LinearLayout>
 
     </LinearLayout>
 
-</LinearLayout>
+</ScrollView>
 

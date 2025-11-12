@@ -179,6 +179,11 @@ public class CalendarFragment extends Fragment {
         int currentYear = currentCalendar.get(Calendar.YEAR);
 
         for (Task task : allTasks) {
+            // Skip tasks that are already done
+            if ("done".equalsIgnoreCase(task.getStatus())) {
+                continue;
+            }
+
             if (task.getDueDate() != null) {
                 Calendar taskCal = Calendar.getInstance();
                 taskCal.setTime(task.getDueDate().toDate());
@@ -276,6 +281,11 @@ public class CalendarFragment extends Fragment {
         endOfDay.set(Calendar.MILLISECOND, 999);
 
         for (Task task : allTasks) {
+            // Skip tasks that are already done
+            if ("done".equalsIgnoreCase(task.getStatus())) {
+                continue;
+            }
+
             if (task.getDueDate() != null) {
                 Date dueDate = task.getDueDate().toDate();
                 if (dueDate.getTime() >= startOfDay.getTimeInMillis() &&

@@ -111,15 +111,21 @@ public class JoinRequestAdapter extends RecyclerView.Adapter<JoinRequestAdapter.
 
             // Accept button
             btnAccept.setOnClickListener(v -> {
+                android.util.Log.d("JoinRequestAdapter", "Accept button clicked for position: " + position);
                 if (listener != null) {
                     listener.onAccept(request, position);
+                } else {
+                    android.util.Log.e("JoinRequestAdapter", "Listener is null!");
                 }
             });
 
             // Reject button
             btnReject.setOnClickListener(v -> {
+                android.util.Log.d("JoinRequestAdapter", "Reject button clicked for position: " + position);
                 if (listener != null) {
                     listener.onReject(request, position);
+                } else {
+                    android.util.Log.e("JoinRequestAdapter", "Listener is null!");
                 }
             });
         }

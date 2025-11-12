@@ -69,5 +69,63 @@ public class NotificationRepository {
         );
         createNotification(notification, onSuccess, onFailure);
     }
+
+    // REALTIME: Listen to rejection notifications for user
+    public com.google.firebase.firestore.ListenerRegistration listenToRejectionNotifications(
+            String userId,
+            OnSuccessListener<java.util.List<Notification>> onDataChanged,
+            OnFailureListener onFailure) {
+
+        return com.google.firebase.firestore.FirebaseFirestore.getInstance()
+            .collection(COLLECTION_NOTIFICATIONS)
+            .whereEqualTo("userId", userId)
+            .whereEqualTo("isRead", false)
+            .addSnapshotListener((querySnapshot, error) -> {
+                if (error != null) {
+                    Log.e(TAG, "Error listening to rejection notifications", error);
+                    onFailure.onFailure(error);
+                    return;
+                }
+
+                if (querySnapshot != null) {
+                    java.util.List<Notification> notifications = new java.util.ArrayList<>();
+                    for (com.google.firebase.firestore.DocumentSnapshot doc : querySnapshot) {
+                        Notification notification = doc.toObject(Notification.class);
+                        if (notification != null) {
+                            notifications.add(notification);
+                        }
+                    }
+
+                    // Sort by createdAt descending
+                    notifications.sort((n1, n2) -> {
+                        if (n1.getCreatedAt() == null) return 1;
+                        if (n2.getCreatedAt() == null) return -1;
+                        return n2.getCreatedAt().compareTo(n1.getCreatedAt());
+                    });
+
+                    Log.d(TAG, "Realtime rejection notifications update: " + notifications.size());
+                    onDataChanged.onSuccess(notifications);
+                }
+            });
+    }
+
+    // Mark notification as read
+    public void markAsRead(String notificationId,
+                          OnSuccessListener<Void> onSuccess,
+                          OnFailureListener onFailure) {
+        com.google.firebase.firestore.FirebaseFirestore.getInstance()
+            .collection(COLLECTION_NOTIFICATIONS)
+            .document(notificationId)
+            .update("isRead", true)
+            .addOnSuccessListener(aVoid -> {
+                Log.d(TAG, "Notification marked as read: " + notificationId);
+                onSuccess.onSuccess(aVoid);
+            })
+            .addOnFailureListener(e -> {
+                Log.e(TAG, "Error marking notification as read", e);
+                onFailure.onFailure(e);
+            });
+    }
 }
+
 

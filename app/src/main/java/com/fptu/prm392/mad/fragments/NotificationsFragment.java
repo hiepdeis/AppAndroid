@@ -6,6 +6,7 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.LinearLayout;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
@@ -27,16 +28,20 @@ import java.util.List;
 
 public class NotificationsFragment extends Fragment {
 
-    private RecyclerView rvJoinRequests;
+    private RecyclerView rvJoinRequests, rvRejectionNotifications;
     private LinearLayout emptyState;
-    private JoinRequestAdapter adapter;
+    private TextView tvEmptyJoinRequests, tvEmptyNotifications;
+    private JoinRequestAdapter requestAdapter;
+    private com.fptu.prm392.mad.adapters.RejectionNotificationAdapter notificationAdapter;
 
     private ProjectJoinRequestRepository requestRepository;
+    private com.fptu.prm392.mad.repositories.NotificationRepository notificationRepository;
     private ProjectRepository projectRepository;
     private FirebaseAuth auth;
 
-    // Realtime listener
+    // Realtime listeners
     private ListenerRegistration requestsListener;
+    private ListenerRegistration notificationsListener;
 
     @Nullable
     @Override
@@ -45,16 +50,20 @@ public class NotificationsFragment extends Fragment {
 
         // Initialize repositories
         requestRepository = new ProjectJoinRequestRepository();
+        notificationRepository = new com.fptu.prm392.mad.repositories.NotificationRepository();
         projectRepository = new ProjectRepository();
         auth = FirebaseAuth.getInstance();
 
         // Initialize views
         rvJoinRequests = view.findViewById(R.id.rvJoinRequests);
+        rvRejectionNotifications = view.findViewById(R.id.rvRejectionNotifications);
         emptyState = view.findViewById(R.id.emptyState);
+        tvEmptyJoinRequests = view.findViewById(R.id.tvEmptyJoinRequests);
+        tvEmptyNotifications = view.findViewById(R.id.tvEmptyNotifications);
 
-        // Setup RecyclerView
+        // Setup Join Requests RecyclerView
         rvJoinRequests.setLayoutManager(new LinearLayoutManager(getContext()));
-        adapter = new JoinRequestAdapter(new JoinRequestAdapter.OnRequestActionListener() {
+        requestAdapter = new JoinRequestAdapter(new JoinRequestAdapter.OnRequestActionListener() {
             @Override
             public void onAccept(ProjectJoinRequest request, int position) {
                 handleAcceptRequest(request, position);
@@ -65,10 +74,18 @@ public class NotificationsFragment extends Fragment {
                 handleRejectRequest(request, position);
             }
         });
-        rvJoinRequests.setAdapter(adapter);
+        rvJoinRequests.setAdapter(requestAdapter);
+
+        // Setup Rejection Notifications RecyclerView
+        rvRejectionNotifications.setLayoutManager(new LinearLayoutManager(getContext()));
+        notificationAdapter = new com.fptu.prm392.mad.adapters.RejectionNotificationAdapter(
+            (notification, position) -> handleDismissNotification(notification, position)
+        );
+        rvRejectionNotifications.setAdapter(notificationAdapter);
 
         // Start listening to realtime updates
         startListeningToRequests();
+        startListeningToRejectionNotifications();
 
         return view;
     }
@@ -84,11 +101,12 @@ public class NotificationsFragment extends Fragment {
         super.onDestroyView();
         // Stop listening when fragment is destroyed
         stopListeningToRequests();
+        stopListeningToRejectionNotifications();
     }
 
     private void startListeningToRequests() {
         if (auth.getCurrentUser() == null) {
-            showEmptyState();
+            updateEmptyStates();
             return;
         }
 
@@ -98,15 +116,19 @@ public class NotificationsFragment extends Fragment {
         requestsListener = requestRepository.listenToPendingRequests(currentUserId,
             requests -> {
                 if (requests.isEmpty()) {
-                    showEmptyState();
+                    tvEmptyJoinRequests.setVisibility(View.VISIBLE);
+                    rvJoinRequests.setVisibility(View.GONE);
                 } else {
-                    showRequests(requests);
+                    tvEmptyJoinRequests.setVisibility(View.GONE);
+                    rvJoinRequests.setVisibility(View.VISIBLE);
+                    requestAdapter.setRequests(requests);
                 }
+                updateEmptyStates();
             },
             e -> {
                 Toast.makeText(getContext(), "Error loading requests: " + e.getMessage(),
                     Toast.LENGTH_SHORT).show();
-                showEmptyState();
+                updateEmptyStates();
             }
         );
     }
@@ -115,6 +137,53 @@ public class NotificationsFragment extends Fragment {
         if (requestsListener != null) {
             requestsListener.remove();
             requestsListener = null;
+        }
+    }
+
+    private void startListeningToRejectionNotifications() {
+        if (auth.getCurrentUser() == null) {
+            updateEmptyStates();
+            return;
+        }
+
+        String currentUserId = auth.getCurrentUser().getUid();
+
+        // Setup realtime listener for rejection notifications
+        notificationsListener = notificationRepository.listenToRejectionNotifications(currentUserId,
+            notifications -> {
+                if (notifications.isEmpty()) {
+                    tvEmptyNotifications.setVisibility(View.VISIBLE);
+                    rvRejectionNotifications.setVisibility(View.GONE);
+                } else {
+                    tvEmptyNotifications.setVisibility(View.GONE);
+                    rvRejectionNotifications.setVisibility(View.VISIBLE);
+                    notificationAdapter.setNotifications(notifications);
+                }
+                updateEmptyStates();
+            },
+            e -> {
+                Toast.makeText(getContext(), "Error loading notifications: " + e.getMessage(),
+                    Toast.LENGTH_SHORT).show();
+                updateEmptyStates();
+            }
+        );
+    }
+
+    private void stopListeningToRejectionNotifications() {
+        if (notificationsListener != null) {
+            notificationsListener.remove();
+            notificationsListener = null;
+        }
+    }
+
+    private void updateEmptyStates() {
+        boolean hasRequests = requestAdapter != null && requestAdapter.getItemCount() > 0;
+        boolean hasNotifications = notificationAdapter != null && notificationAdapter.getItemCount() > 0;
+
+        if (!hasRequests && !hasNotifications) {
+            emptyState.setVisibility(View.VISIBLE);
+        } else {
+            emptyState.setVisibility(View.GONE);
         }
     }
 
@@ -140,12 +209,10 @@ public class NotificationsFragment extends Fragment {
                     v -> {
                         Toast.makeText(getContext(), "Request accepted!", Toast.LENGTH_SHORT).show();
                         // Remove from list
-                        adapter.removeItem(position);
+                        requestAdapter.removeItem(position);
 
-                        // Check if empty
-                        if (adapter.getItemCount() == 0) {
-                            showEmptyState();
-                        }
+                        // Check if empty - use updateEmptyStates() instead
+                        updateEmptyStates();
                     },
                     e -> {
                         Toast.makeText(getContext(), "Error updating request: " + e.getMessage(),
@@ -210,12 +277,10 @@ public class NotificationsFragment extends Fragment {
 
                 Toast.makeText(getContext(), "Request rejected", Toast.LENGTH_SHORT).show();
                 // Remove from list
-                adapter.removeItem(position);
+                requestAdapter.removeItem(position);
 
                 // Check if empty
-                if (adapter.getItemCount() == 0) {
-                    showEmptyState();
-                }
+                updateEmptyStates();
             },
             e -> {
                 Toast.makeText(getContext(), "Error rejecting request: " + e.getMessage(),
@@ -224,15 +289,30 @@ public class NotificationsFragment extends Fragment {
         );
     }
 
-    private void showRequests(List<ProjectJoinRequest> requests) {
-        adapter.setRequests(requests);
-        rvJoinRequests.setVisibility(View.VISIBLE);
-        emptyState.setVisibility(View.GONE);
+    private void handleDismissNotification(com.fptu.prm392.mad.models.Notification notification, int position) {
+        // Mark notification as read (will automatically remove from list via listener)
+        notificationRepository.markAsRead(notification.getNotificationId(),
+            aVoid -> {
+                Toast.makeText(getContext(), "Notification dismissed", Toast.LENGTH_SHORT).show();
+                // Listener will auto-update the list
+            },
+            e -> {
+                Toast.makeText(getContext(), "Error dismissing notification: " + e.getMessage(),
+                    Toast.LENGTH_SHORT).show();
+            }
+        );
     }
 
     private void showEmptyState() {
-        rvJoinRequests.setVisibility(View.GONE);
         emptyState.setVisibility(View.VISIBLE);
+        rvJoinRequests.setVisibility(View.GONE);
+        rvRejectionNotifications.setVisibility(View.GONE);
+    }
+
+    private void showRequests(List<ProjectJoinRequest> requests) {
+        requestAdapter.setRequests(requests);
+        rvJoinRequests.setVisibility(View.VISIBLE);
+        emptyState.setVisibility(View.GONE);
     }
 }
 
