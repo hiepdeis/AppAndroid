@@ -52,6 +52,11 @@
             android:name=".UserProfileActivity"
             android:exported="false" />
 
+        <!-- Global Search Activity - Màn hình tìm kiếm toàn cục -->
+        <activity
+            android:name=".GlobalSearchActivity"
+            android:exported="false" />
+
 
         <!-- Register Activity - Màn hình đăng ký -->
         <activity

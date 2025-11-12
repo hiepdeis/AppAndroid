@@ -410,5 +410,91 @@ public class TaskRepository {
                 })
                 .addOnFailureListener(onFailure);
     }
-}
 
+    // SEARCH: Tìm tasks được assign cho user hiện tại (across all projects)
+    public void searchMyTasks(String query, OnSuccessListener<List<Task>> onSuccess,
+                             OnFailureListener onFailure) {
+        getMyTasks(tasks -> {
+            List<Task> filtered = filterTasksByQuery(tasks, query);
+            onSuccess.onSuccess(filtered);
+        }, onFailure);
+    }
+
+    // UPDATE: Remove user từ tất cả tasks trong một project (khi user leave project)
+    public void removeUserFromAllProjectTasks(String projectId, String userId,
+                                             OnSuccessListener<Void> onSuccess,
+                                             OnFailureListener onFailure) {
+        db.collection(COLLECTION_TASKS)
+                .whereEqualTo("projectId", projectId)
+                .whereArrayContains("assignees", userId)
+                .get()
+                .addOnSuccessListener(querySnapshot -> {
+                    if (querySnapshot.isEmpty()) {
+                        // No tasks assigned, just succeed
+                        onSuccess.onSuccess(null);
+                        return;
+                    }
+
+                    // Count how many tasks need to be updated
+                    int totalTasks = querySnapshot.size();
+                    final int[] updatedTasks = {0};
+                    final boolean[] hasError = {false};
+
+                    for (com.google.firebase.firestore.DocumentSnapshot doc : querySnapshot) {
+                        Task task = doc.toObject(Task.class);
+                        if (task != null && task.getAssignees() != null) {
+                            List<String> assignees = new ArrayList<>(task.getAssignees());
+                            assignees.remove(userId);
+
+                            db.collection(COLLECTION_TASKS)
+                                    .document(task.getTaskId())
+                                    .update("assignees", assignees)
+                                    .addOnSuccessListener(aVoid -> {
+                                        updatedTasks[0]++;
+                                        if (updatedTasks[0] == totalTasks) {
+                                            Log.d(TAG, "Removed user from " + totalTasks + " tasks in project " + projectId);
+                                            onSuccess.onSuccess(null);
+                                        }
+                                    })
+                                    .addOnFailureListener(e -> {
+                                        if (!hasError[0]) {
+                                            hasError[0] = true;
+                                            Log.e(TAG, "Error removing user from tasks", e);
+                                            onFailure.onFailure(e);
+                                        }
+                                    });
+                        } else {
+                            updatedTasks[0]++;
+                            if (updatedTasks[0] == totalTasks && !hasError[0]) {
+                                onSuccess.onSuccess(null);
+                            }
+                        }
+                    }
+                })
+                .addOnFailureListener(e -> {
+                    Log.e(TAG, "Error querying tasks", e);
+                    onFailure.onFailure(e);
+                });
+    }
+
+    // Helper: Filter tasks by query (title or description contains query)
+    private List<Task> filterTasksByQuery(List<Task> tasks, String query) {
+        if (query == null || query.trim().isEmpty()) {
+            return tasks;
+        }
+
+        String lowerQuery = query.toLowerCase().trim();
+        List<Task> filtered = new ArrayList<>();
+
+        for (Task task : tasks) {
+            String title = task.getTitle() != null ? task.getTitle().toLowerCase() : "";
+            String description = task.getDescription() != null ? task.getDescription().toLowerCase() : "";
+
+            if (title.contains(lowerQuery) || description.contains(lowerQuery)) {
+                filtered.add(task);
+            }
+        }
+
+        return filtered;
+    }
+}

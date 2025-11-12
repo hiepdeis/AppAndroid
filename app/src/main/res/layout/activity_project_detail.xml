@@ -458,6 +458,37 @@
 
             </LinearLayout>
 
+            <!-- Menu Item 5 - Leave Project (for members only) -->
+            <LinearLayout
+                android:id="@+id/menuLeave"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:gravity="center"
+                android:padding="6dp"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:clickable="true"
+                android:focusable="true"
+                android:layout_marginStart="4dp"
+                android:visibility="gone">
+
+                <ImageView
+                    android:layout_width="32dp"
+                    android:layout_height="32dp"
+                    android:src="@drawable/out"
+                    android:padding="2dp"
+                    android:contentDescription="Leave Project" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Leave"
+                    android:textSize="10sp"
+                    android:textColor="#FF9800"
+                    android:layout_marginTop="2dp" />
+
+            </LinearLayout>
+
         </LinearLayout>
 
         <!-- Main Menu Button -->

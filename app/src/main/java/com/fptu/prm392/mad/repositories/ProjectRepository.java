@@ -549,4 +549,61 @@ public class ProjectRepository {
                 onFailure.onFailure(e);
             });
     }
+
+    // SEARCH: Search trong projects mình tham gia
+    public void searchMyProjects(String query, OnSuccessListener<List<Project>> onSuccess,
+                                OnFailureListener onFailure) {
+        getMyProjects(projects -> {
+            List<Project> filtered = filterProjectsByQuery(projects, query);
+            onSuccess.onSuccess(filtered);
+        }, onFailure);
+    }
+
+    // SEARCH: Lấy tất cả public projects (tất cả projects trong hệ thống)
+    public void searchAllPublicProjects(String query, OnSuccessListener<List<Project>> onSuccess,
+                                       OnFailureListener onFailure) {
+        db.collection(COLLECTION_PROJECTS)
+            .get()
+            .addOnSuccessListener(querySnapshot -> {
+                List<Project> allProjects = new ArrayList<>();
+                for (DocumentSnapshot doc : querySnapshot) {
+                    try {
+                        Project project = doc.toObject(Project.class);
+                        if (project != null) {
+                            allProjects.add(project);
+                        }
+                    } catch (RuntimeException e) {
+                        Log.w(TAG, "Skipping project " + doc.getId() + " due to error: " + e.getMessage());
+                    }
+                }
+
+                List<Project> filtered = filterProjectsByQuery(allProjects, query);
+                onSuccess.onSuccess(filtered);
+            })
+            .addOnFailureListener(e -> {
+                Log.e(TAG, "Error searching all public projects", e);
+                onFailure.onFailure(e);
+            });
+    }
+
+    // Helper: Filter projects by query (name or description contains query)
+    private List<Project> filterProjectsByQuery(List<Project> projects, String query) {
+        if (query == null || query.trim().isEmpty()) {
+            return projects;
+        }
+
+        String lowerQuery = query.toLowerCase().trim();
+        List<Project> filtered = new ArrayList<>();
+
+        for (Project project : projects) {
+            String name = project.getName() != null ? project.getName().toLowerCase() : "";
+            String description = project.getDescription() != null ? project.getDescription().toLowerCase() : "";
+
+            if (name.contains(lowerQuery) || description.contains(lowerQuery)) {
+                filtered.add(project);
+            }
+        }
+
+        return filtered;
+    }
 }

@@ -187,4 +187,84 @@ public class UserRepository {
                 onFailure.onFailure(e);
             });
     }
+
+    // SEARCH: Tìm users trong các projects mà mình tham gia (exclude bản thân)
+    // Cần truyền vào list của memberIds từ tất cả projects mình join
+    public void searchUsersInMyProjects(List<String> allMemberIds, String query,
+                                       OnSuccessListener<List<User>> onSuccess,
+                                       OnFailureListener onFailure) {
+        if (auth.getCurrentUser() == null) {
+            onFailure.onFailure(new Exception("User not logged in"));
+            return;
+        }
+
+        String currentUserId = auth.getCurrentUser().getUid();
+
+        // Remove duplicates and current user
+        List<String> uniqueMemberIds = new ArrayList<>();
+        for (String memberId : allMemberIds) {
+            if (!memberId.equals(currentUserId) && !uniqueMemberIds.contains(memberId)) {
+                uniqueMemberIds.add(memberId);
+            }
+        }
+
+        if (uniqueMemberIds.isEmpty()) {
+            onSuccess.onSuccess(new ArrayList<>());
+            return;
+        }
+
+        // Firestore 'in' query giới hạn 10 items, nên phải chia batch
+        List<User> allUsers = new ArrayList<>();
+        int batchSize = 10;
+        int totalBatches = (int) Math.ceil((double) uniqueMemberIds.size() / batchSize);
+        final int[] completedBatches = {0};
+
+        for (int i = 0; i < totalBatches; i++) {
+            int start = i * batchSize;
+            int end = Math.min(start + batchSize, uniqueMemberIds.size());
+            List<String> batch = uniqueMemberIds.subList(start, end);
+
+            db.collection(COLLECTION_USERS)
+                .whereIn("userId", batch)
+                .get()
+                .addOnSuccessListener(querySnapshot -> {
+                    for (DocumentSnapshot doc : querySnapshot) {
+                        User user = doc.toObject(User.class);
+                        if (user != null) {
+                            user.setUserId(doc.getId());
+                            allUsers.add(user);
+                        }
+                    }
+
+                    completedBatches[0]++;
+                    if (completedBatches[0] == totalBatches) {
+                        // All batches completed, filter by query
+                        List<User> filteredUsers = filterUsersByQuery(allUsers, query);
+                        onSuccess.onSuccess(filteredUsers);
+                    }
+                })
+                .addOnFailureListener(onFailure);
+        }
+    }
+
+    // Helper: Filter users by query (fullname or email contains query)
+    private List<User> filterUsersByQuery(List<User> users, String query) {
+        if (query == null || query.trim().isEmpty()) {
+            return users;
+        }
+
+        String lowerQuery = query.toLowerCase().trim();
+        List<User> filtered = new ArrayList<>();
+
+        for (User user : users) {
+            String fullname = user.getFullname() != null ? user.getFullname().toLowerCase() : "";
+            String email = user.getEmail() != null ? user.getEmail().toLowerCase() : "";
+
+            if (fullname.contains(lowerQuery) || email.contains(lowerQuery)) {
+                filtered.add(user);
+            }
+        }
+
+        return filtered;
+    }
 }

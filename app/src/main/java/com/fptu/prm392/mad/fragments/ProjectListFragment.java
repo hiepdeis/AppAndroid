@@ -22,6 +22,7 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.fptu.prm392.mad.CreateProjectActivity;
+import com.fptu.prm392.mad.GlobalSearchActivity;
 import com.fptu.prm392.mad.R;
 import com.fptu.prm392.mad.adapters.ProjectAdapter;
 import com.fptu.prm392.mad.adapters.ProjectSearchAdapter;
@@ -74,6 +75,7 @@ public class ProjectListFragment extends Fragment {
         searchBar = view.findViewById(R.id.searchBar);
         fabCreateProject = view.findViewById(R.id.fabCreateProject);
         btnJoinProject = view.findViewById(R.id.btnJoinProject);
+        ImageView btnGlobalSearch = view.findViewById(R.id.btnGlobalSearch);
 
         // Setup RecyclerView
         recyclerViewProjects.setLayoutManager(new LinearLayoutManager(getContext()));
@@ -85,6 +87,12 @@ public class ProjectListFragment extends Fragment {
             }
         });
         recyclerViewProjects.setAdapter(projectAdapter);
+
+        // Setup Global Search button click
+        btnGlobalSearch.setOnClickListener(v -> {
+            Intent intent = new Intent(getActivity(), GlobalSearchActivity.class);
+            startActivity(intent);
+        });
 
         // Setup Create Project button click
         fabCreateProject.setOnClickListener(v -> {

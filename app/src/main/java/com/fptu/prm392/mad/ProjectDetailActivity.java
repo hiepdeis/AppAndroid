@@ -55,7 +55,7 @@ public class ProjectDetailActivity extends AppCompatActivity {
     // Horizontal Menu
     private ImageView fabMain;
     private LinearLayout horizontalMenu;
-    private LinearLayout menuMember, menuTask, menuChat, menuDelete;
+    private LinearLayout menuMember, menuTask, menuChat, menuDelete, menuLeave;
     private boolean isMenuOpen = false;
 
     @Override
@@ -101,6 +101,7 @@ public class ProjectDetailActivity extends AppCompatActivity {
         menuTask = findViewById(R.id.menuTask);
         menuChat = findViewById(R.id.menuChat);
         menuDelete = findViewById(R.id.menuDelete);
+        menuLeave = findViewById(R.id.menuLeave);
 
         // Back button
         btnBack.setOnClickListener(v -> finish());
@@ -186,10 +187,14 @@ public class ProjectDetailActivity extends AppCompatActivity {
         // Show/hide Edit button based on manager status
         btnEdit.setVisibility(isManager ? View.VISIBLE : View.GONE);
 
-        // Also check if Delete menu should be shown in the FAB menu
-        // We'll hide the delete option for non-managers
+        // Show/hide menu items based on role
         if (menuDelete != null) {
             menuDelete.setVisibility(isManager ? View.VISIBLE : View.GONE);
+        }
+
+        if (menuLeave != null) {
+            // Show Leave only for members (not manager)
+            menuLeave.setVisibility(isManager ? View.GONE : View.VISIBLE);
         }
     }
 
@@ -449,6 +454,11 @@ public class ProjectDetailActivity extends AppCompatActivity {
 
         menuDelete.setOnClickListener(v -> {
             showDeleteProjectConfirmation();
+            closeMenu();
+        });
+
+        menuLeave.setOnClickListener(v -> {
+            showLeaveProjectConfirmation();
             closeMenu();
         });
 
@@ -883,6 +893,79 @@ public class ProjectDetailActivity extends AppCompatActivity {
             e -> {
                 progressDialog.dismiss();
                 Toast.makeText(this, "Error deleting project: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+            }
+        );
+    }
+
+    private void showLeaveProjectConfirmation() {
+        if (currentProject == null) {
+            Toast.makeText(this, "Loading project...", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        String currentUserId = auth.getCurrentUser() != null ? auth.getCurrentUser().getUid() : null;
+        if (currentUserId == null) {
+            Toast.makeText(this, "User not logged in", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        // Check if user is manager (can't leave own project)
+        if (currentUserId.equals(currentProject.getCreatedBy())) {
+            Toast.makeText(this, "Project manager cannot leave the project. Delete it instead.", Toast.LENGTH_LONG).show();
+            return;
+        }
+
+        new androidx.appcompat.app.AlertDialog.Builder(this)
+            .setTitle("Leave Project")
+            .setMessage("Are you sure you want to leave \"" + currentProject.getName() +
+                "\"?\n\nYou will:\n• Be removed from all assigned tasks\n• Lose access to project chat\n• No longer see this project\n\nYou can rejoin if invited again.")
+            .setPositiveButton("Leave", (dialog, which) -> {
+                leaveProject(currentUserId);
+            })
+            .setNegativeButton("Cancel", null)
+            .setIcon(android.R.drawable.ic_dialog_alert)
+            .show();
+    }
+
+    private void leaveProject(String userId) {
+        // Show loading
+        android.app.ProgressDialog progressDialog = new android.app.ProgressDialog(this);
+        progressDialog.setMessage("Leaving project...");
+        progressDialog.setCancelable(false);
+        progressDialog.show();
+
+        // Step 1: Remove user from all tasks in this project
+        taskRepository.removeUserFromAllProjectTasks(projectId, userId,
+            aVoid -> {
+                Log.d("ProjectDetail", "User removed from all project tasks");
+                // Step 2: Remove user from project members
+                projectRepository.removeMemberFromProject(projectId, userId,
+                    v -> {
+                        progressDialog.dismiss();
+                        Toast.makeText(this, "You have left the project", Toast.LENGTH_SHORT).show();
+                        // Go back to home
+                        finish();
+                    },
+                    e -> {
+                        progressDialog.dismiss();
+                        Toast.makeText(this, "Error leaving project: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+                    }
+                );
+            },
+            e -> {
+                // Even if task removal fails, try to remove from project
+                Log.e("ProjectDetail", "Error removing user from tasks: " + e.getMessage());
+                projectRepository.removeMemberFromProject(projectId, userId,
+                    v -> {
+                        progressDialog.dismiss();
+                        Toast.makeText(this, "Left project (some task assignments may remain)", Toast.LENGTH_LONG).show();
+                        finish();
+                    },
+                    err -> {
+                        progressDialog.dismiss();
+                        Toast.makeText(this, "Error leaving project: " + err.getMessage(), Toast.LENGTH_SHORT).show();
+                    }
+                );
             }
         );
     }

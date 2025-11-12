@@ -92,11 +92,25 @@
         android:layout_marginEnd="24dp"
         android:layout_marginBottom="88dp">
 
-        <!-- Join Project Button (Top) -->
+        <!-- Global Search Button (Top) -->
+        <ImageView
+            android:id="@+id/btnGlobalSearch"
+            android:layout_width="60dp"
+            android:layout_height="60dp"
+            android:src="@drawable/global_search"
+            android:background="@drawable/bg_fab_main"
+            android:padding="12dp"
+            android:clickable="true"
+            android:focusable="true"
+            android:elevation="6dp"
+            android:contentDescription="Global Search" />
+
+        <!-- Join Project Button (Middle) -->
         <ImageView
             android:id="@+id/btnJoinProject"
             android:layout_width="60dp"
             android:layout_height="60dp"
+            android:layout_marginTop="16dp"
             android:src="@drawable/join_project"
             android:background="@drawable/bg_fab_main"
             android:padding="12dp"
