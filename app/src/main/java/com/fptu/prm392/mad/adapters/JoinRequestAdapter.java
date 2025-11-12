@@ -67,7 +67,8 @@ public class JoinRequestAdapter extends RecyclerView.Adapter<JoinRequestAdapter.
 
     class ViewHolder extends RecyclerView.ViewHolder {
         TextView tvProjectName, tvRequesterName, tvRequesterEmail, tvRequestTime;
-        ImageView ivRequesterAvatar, btnAccept, btnReject;
+        ImageView ivRequesterAvatar;
+        android.widget.LinearLayout btnAccept, btnReject;
 
         public ViewHolder(@NonNull View itemView) {
             super(itemView);
@@ -82,7 +83,7 @@ public class JoinRequestAdapter extends RecyclerView.Adapter<JoinRequestAdapter.
 
         public void bind(ProjectJoinRequest request, int position) {
             // Set project name
-            tvProjectName.setText("Join request for: " + request.getProjectName());
+            tvProjectName.setText(request.getProjectName());
 
             // Set requester info
             tvRequesterName.setText(request.getRequesterName());

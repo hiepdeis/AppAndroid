@@ -63,6 +63,10 @@ public class HomeActivity extends AppCompatActivity {
     // Image picker launcher
     private ActivityResultLauncher<String> imagePickerLauncher;
 
+    // Realtime notification listener
+    private com.google.firebase.firestore.ListenerRegistration notificationCountListener;
+    private com.google.android.material.badge.BadgeDrawable notificationBadge;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -97,6 +101,9 @@ public class HomeActivity extends AppCompatActivity {
 
         // Force disable icon tint để hiển thị màu gốc của PNG
         bottomNavigationView.setItemIconTintList(null);
+
+        // Setup notification badge
+        setupNotificationBadge();
 
         // Lấy thông tin user hiện tại
         FirebaseUser currentUser = mAuth.getCurrentUser();
@@ -171,6 +178,53 @@ public class HomeActivity extends AppCompatActivity {
                 return false;
             }
         });
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        // Stop listening to notification count
+        stopListeningToNotificationCount();
+    }
+
+    private void setupNotificationBadge() {
+        // Get or create badge for notification icon
+        notificationBadge = bottomNavigationView.getOrCreateBadge(R.id.nav_notification);
+        notificationBadge.setBackgroundColor(getResources().getColor(android.R.color.holo_red_dark));
+        notificationBadge.setBadgeTextColor(getResources().getColor(android.R.color.white));
+        notificationBadge.setVisible(false); // Hide initially
+
+        // Start listening to realtime count
+        startListeningToNotificationCount();
+    }
+
+    private void startListeningToNotificationCount() {
+        if (mAuth.getCurrentUser() == null) return;
+
+        String currentUserId = mAuth.getCurrentUser().getUid();
+        com.fptu.prm392.mad.repositories.ProjectJoinRequestRepository requestRepo =
+            new com.fptu.prm392.mad.repositories.ProjectJoinRequestRepository();
+
+        notificationCountListener = requestRepo.listenToPendingRequestCount(currentUserId,
+            count -> {
+                if (count > 0) {
+                    notificationBadge.setNumber(count);
+                    notificationBadge.setVisible(true);
+                } else {
+                    notificationBadge.setVisible(false);
+                }
+            },
+            e -> {
+                android.util.Log.e("HomeActivity", "Error listening to notification count", e);
+            }
+        );
+    }
+
+    private void stopListeningToNotificationCount() {
+        if (notificationCountListener != null) {
+            notificationCountListener.remove();
+            notificationCountListener = null;
+        }
     }
 
     private void handleIncomingIntent() {

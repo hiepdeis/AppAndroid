@@ -688,35 +688,46 @@ public class ProjectDetailActivity extends AppCompatActivity {
     }
 
     private void addMemberToProject(User user, Dialog addDialog, Dialog parentDialog) {
-        // Create ProjectMember object
-        ProjectMember newMember = new ProjectMember(
-            projectId,
-            user.getUserId(),
-            user.getFullname(),
-            user.getEmail(),
-            user.getAvatar(),
-            "member" // Default role is member
-        );
+        // Check if user already sent request
+        com.fptu.prm392.mad.repositories.ProjectJoinRequestRepository requestRepo =
+            new com.fptu.prm392.mad.repositories.ProjectJoinRequestRepository();
 
-        // Add to Firestore
-        projectRepository.addMemberToProject(projectId, newMember,
-            aVoid -> {
-                Toast.makeText(this, "Member added successfully", Toast.LENGTH_SHORT).show();
-
-                // Close add dialog
-                addDialog.dismiss();
-
-                // Reload members in parent dialog
-                RecyclerView rvMembers = parentDialog.findViewById(R.id.rvMembers);
-                if (rvMembers != null && rvMembers.getAdapter() instanceof MemberAdapter) {
-                    loadProjectMembers((MemberAdapter) rvMembers.getAdapter());
+        requestRepo.hasPendingRequest(projectId, user.getUserId(),
+            hasPending -> {
+                if (hasPending) {
+                    Toast.makeText(this, "This user already has a pending request", Toast.LENGTH_LONG).show();
+                    return;
                 }
 
-                // Reload project details to update member count
-                loadProjectDetails();
+                // Create Join Request (manager invites user)
+                com.fptu.prm392.mad.models.ProjectJoinRequest request =
+                    new com.fptu.prm392.mad.models.ProjectJoinRequest(
+                        null, // requestId will be generated
+                        projectId,
+                        currentProject.getName(),
+                        user.getUserId(),
+                        user.getFullname(),
+                        user.getEmail(),
+                        user.getAvatar(),
+                        user.getUserId() // managerId = userId (user receives the request)
+                    );
+
+                // Send request
+                requestRepo.createJoinRequest(request,
+                    requestId -> {
+                        Toast.makeText(this, "Invitation sent to " + user.getFullname(), Toast.LENGTH_LONG).show();
+
+                        // Close add dialog
+                        addDialog.dismiss();
+                    },
+                    e -> {
+                        Toast.makeText(this, "Error sending invitation: " + e.getMessage(),
+                            Toast.LENGTH_SHORT).show();
+                    }
+                );
             },
             e -> {
-                Toast.makeText(this, "Error adding member: " + e.getMessage(),
+                Toast.makeText(this, "Error checking request: " + e.getMessage(),
                     Toast.LENGTH_SHORT).show();
             }
         );

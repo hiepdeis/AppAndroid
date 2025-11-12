@@ -150,5 +150,86 @@ public class ProjectJoinRequestRepository {
                 onFailure.onFailure(e);
             });
     }
+
+    // REALTIME: Listen to pending requests for manager
+    public com.google.firebase.firestore.ListenerRegistration listenToPendingRequests(
+            String managerId,
+            OnSuccessListener<List<ProjectJoinRequest>> onDataChanged,
+            OnFailureListener onFailure) {
+
+        return db.collection(COLLECTION_JOIN_REQUESTS)
+            .whereEqualTo("managerId", managerId)
+            .whereEqualTo("status", "pending")
+            .addSnapshotListener((querySnapshot, error) -> {
+                if (error != null) {
+                    Log.e(TAG, "Error listening to requests", error);
+                    onFailure.onFailure(error);
+                    return;
+                }
+
+                if (querySnapshot != null) {
+                    List<ProjectJoinRequest> requests = new ArrayList<>();
+                    for (DocumentSnapshot doc : querySnapshot) {
+                        ProjectJoinRequest request = doc.toObject(ProjectJoinRequest.class);
+                        if (request != null) {
+                            requests.add(request);
+                        }
+                    }
+
+                    // Sort by createdAt descending
+                    requests.sort((r1, r2) -> {
+                        if (r1.getCreatedAt() == null) return 1;
+                        if (r2.getCreatedAt() == null) return -1;
+                        return r2.getCreatedAt().compareTo(r1.getCreatedAt());
+                    });
+
+                    Log.d(TAG, "Realtime update: " + requests.size() + " pending requests");
+                    onDataChanged.onSuccess(requests);
+                }
+            });
+    }
+
+    // COUNT: Đếm số pending requests (cho badge)
+    public void getPendingRequestCount(String managerId,
+                                      OnSuccessListener<Integer> onSuccess,
+                                      OnFailureListener onFailure) {
+        db.collection(COLLECTION_JOIN_REQUESTS)
+            .whereEqualTo("managerId", managerId)
+            .whereEqualTo("status", "pending")
+            .get()
+            .addOnSuccessListener(querySnapshot -> {
+                int count = querySnapshot.size();
+                Log.d(TAG, "Pending request count: " + count);
+                onSuccess.onSuccess(count);
+            })
+            .addOnFailureListener(e -> {
+                Log.e(TAG, "Error counting requests", e);
+                onFailure.onFailure(e);
+            });
+    }
+
+    // REALTIME: Listen to pending request count (cho badge realtime)
+    public com.google.firebase.firestore.ListenerRegistration listenToPendingRequestCount(
+            String managerId,
+            OnSuccessListener<Integer> onCountChanged,
+            OnFailureListener onFailure) {
+
+        return db.collection(COLLECTION_JOIN_REQUESTS)
+            .whereEqualTo("managerId", managerId)
+            .whereEqualTo("status", "pending")
+            .addSnapshotListener((querySnapshot, error) -> {
+                if (error != null) {
+                    Log.e(TAG, "Error listening to count", error);
+                    onFailure.onFailure(error);
+                    return;
+                }
+
+                if (querySnapshot != null) {
+                    int count = querySnapshot.size();
+                    Log.d(TAG, "Realtime count update: " + count);
+                    onCountChanged.onSuccess(count);
+                }
+            });
+    }
 }
 

@@ -233,23 +233,55 @@ public class MemberListActivity extends AppCompatActivity {
     }
 
     private void addMemberToProject(User user, android.app.Dialog addDialog) {
-        ProjectMember newMember = new ProjectMember(
-            projectId,
-            user.getUserId(),
-            user.getFullname(),
-            user.getEmail(),
-            user.getAvatar(),
-            "member"
-        );
+        // Check if user already sent request
+        com.fptu.prm392.mad.repositories.ProjectJoinRequestRepository requestRepo =
+            new com.fptu.prm392.mad.repositories.ProjectJoinRequestRepository();
 
-        projectRepository.addMemberToProject(projectId, newMember,
-            aVoid -> {
-                Toast.makeText(this, "Member added successfully", Toast.LENGTH_SHORT).show();
-                addDialog.dismiss();
-                loadProjectMembers();
+        requestRepo.hasPendingRequest(projectId, user.getUserId(),
+            hasPending -> {
+                if (hasPending) {
+                    Toast.makeText(this, "This user already has a pending request", Toast.LENGTH_LONG).show();
+                    return;
+                }
+
+                // Get project info first
+                projectRepository.getProjectById(projectId,
+                    project -> {
+                        // Create Join Request (manager invites user)
+                        com.fptu.prm392.mad.models.ProjectJoinRequest request =
+                            new com.fptu.prm392.mad.models.ProjectJoinRequest(
+                                null, // requestId will be generated
+                                projectId,
+                                project.getName(),
+                                user.getUserId(),
+                                user.getFullname(),
+                                user.getEmail(),
+                                user.getAvatar(),
+                                user.getUserId() // managerId = userId (user receives the request)
+                            );
+
+                        // Send request
+                        requestRepo.createJoinRequest(request,
+                            requestId -> {
+                                Toast.makeText(this, "Invitation sent to " + user.getFullname(), Toast.LENGTH_LONG).show();
+                                addDialog.dismiss();
+                            },
+                            e -> {
+                                Toast.makeText(this, "Error sending invitation: " + e.getMessage(),
+                                    Toast.LENGTH_SHORT).show();
+                            }
+                        );
+                    },
+                    e -> {
+                        Toast.makeText(this, "Error loading project: " + e.getMessage(),
+                            Toast.LENGTH_SHORT).show();
+                    }
+                );
             },
-            e -> Toast.makeText(this, "Error adding member: " + e.getMessage(),
-                Toast.LENGTH_SHORT).show()
+            e -> {
+                Toast.makeText(this, "Error checking request: " + e.getMessage(),
+                    Toast.LENGTH_SHORT).show();
+            }
         );
     }
 }

@@ -20,6 +20,7 @@ import com.fptu.prm392.mad.models.ProjectMember;
 import com.fptu.prm392.mad.repositories.ProjectJoinRequestRepository;
 import com.fptu.prm392.mad.repositories.ProjectRepository;
 import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.firestore.ListenerRegistration;
 
 import java.util.List;
 
@@ -32,6 +33,9 @@ public class NotificationsFragment extends Fragment {
     private ProjectJoinRequestRepository requestRepository;
     private ProjectRepository projectRepository;
     private FirebaseAuth auth;
+
+    // Realtime listener
+    private ListenerRegistration requestsListener;
 
     @Nullable
     @Override
@@ -62,8 +66,8 @@ public class NotificationsFragment extends Fragment {
         });
         rvJoinRequests.setAdapter(adapter);
 
-        // Load requests
-        loadJoinRequests();
+        // Start listening to realtime updates
+        startListeningToRequests();
 
         return view;
     }
@@ -71,11 +75,17 @@ public class NotificationsFragment extends Fragment {
     @Override
     public void onResume() {
         super.onResume();
-        // Reload requests when fragment is visible
-        loadJoinRequests();
+        // Realtime listener đã active, không cần reload
     }
 
-    private void loadJoinRequests() {
+    @Override
+    public void onDestroyView() {
+        super.onDestroyView();
+        // Stop listening when fragment is destroyed
+        stopListeningToRequests();
+    }
+
+    private void startListeningToRequests() {
         if (auth.getCurrentUser() == null) {
             showEmptyState();
             return;
@@ -83,7 +93,8 @@ public class NotificationsFragment extends Fragment {
 
         String currentUserId = auth.getCurrentUser().getUid();
 
-        requestRepository.getPendingRequestsForManager(currentUserId,
+        // Setup realtime listener
+        requestsListener = requestRepository.listenToPendingRequests(currentUserId,
             requests -> {
                 if (requests.isEmpty()) {
                     showEmptyState();
@@ -98,6 +109,15 @@ public class NotificationsFragment extends Fragment {
             }
         );
     }
+
+    private void stopListeningToRequests() {
+        if (requestsListener != null) {
+            requestsListener.remove();
+            requestsListener = null;
+        }
+    }
+
+    // ...existing code...
 
     private void handleAcceptRequest(ProjectJoinRequest request, int position) {
         // Show loading (optional - add ProgressBar if needed)
