@@ -1,6 +1,7 @@
 package com.fptu.prm392.mad;
 
 import android.content.Intent;
+import android.net.Uri;
 import android.os.Bundle;
 import android.view.MenuItem;
 import android.view.View;
@@ -13,6 +14,7 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
+import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.fragment.app.FragmentTransaction;
 
@@ -28,6 +30,11 @@ import com.fptu.prm392.mad.repositories.UserRepository;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
+import com.bumptech.glide.Glide; // Import Glide
+import com.cloudinary.android.MediaManager;
+import com.cloudinary.android.callback.ErrorInfo;
+import com.cloudinary.android.callback.UploadCallback;
+import java.util.Map;
 
 
 public class HomeActivity extends AppCompatActivity {
@@ -51,9 +58,9 @@ public class HomeActivity extends AppCompatActivity {
 
     // Repositories
     private UserRepository userRepository;
-
+    private ImageView ivProfileAvatar;
     private TextView tvTabMessage;
-
+    private androidx.activity.result.ActivityResultLauncher<Intent> imagePickerLauncher;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -151,7 +158,18 @@ public class HomeActivity extends AppCompatActivity {
                 return false;
             }
         });
-
+        imagePickerLauncher = registerForActivityResult(
+                new androidx.activity.result.contract.ActivityResultContracts.StartActivityForResult(),
+                result -> {
+                    if (result.getResultCode() == RESULT_OK && result.getData() != null) {
+                        android.net.Uri selectedImageUri = result.getData().getData();
+                        if (selectedImageUri != null) {
+                            // Hiển thị hộp xác nhận upload ảnh
+                            showUploadConfirmation(selectedImageUri);
+                        }
+                    }
+                }
+        );
         // Xử lý đăng xuất
         btnLogout.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -275,6 +293,7 @@ public class HomeActivity extends AppCompatActivity {
     }
 
     private void loadUserProfile() {
+        ivProfileAvatar = findViewById(R.id.ivProfileAvatar);
         if (mAuth.getCurrentUser() == null) return;
 
         String currentUserId = mAuth.getCurrentUser().getUid();
@@ -286,6 +305,9 @@ public class HomeActivity extends AppCompatActivity {
         TextView tvProfileEmail = findViewById(R.id.tvProfileEmail);
         Button btnChangePassword = findViewById(R.id.btnChangePassword);
         Button btnProfileSignOut = findViewById(R.id.btnProfileSignOut);
+
+        // GÁN SỰ KIỆN CLICK CHO ẢNH ĐẠI DIỆN
+        ivProfileAvatar.setOnClickListener(v -> openImagePicker());
 
         // Setup change password button
         btnChangePassword.setOnClickListener(v -> showChangePasswordDialog());
@@ -303,6 +325,21 @@ public class HomeActivity extends AppCompatActivity {
                 }
 
                 tvProfileEmail.setText(user.getEmail());
+                // HIỂN THỊ ẢNH ĐẠI DIỆN BẰNG GLIDE (ĐÃ SỬA LỖI)
+                if (user.getAvatar() != null && !user.getAvatar().isEmpty()) {
+                    Glide.with(this)
+                            .load(user.getAvatar()) // <-- Sửa từ getAvatar() thành getAvatar()
+                            .circleCrop()
+                            .placeholder(R.drawable.add_people) // Ảnh mặc định khi chờ tải
+                            .error(R.drawable.add_people)       // Ảnh mặc định khi lỗi
+                            .into(ivProfileAvatar);
+                } else {
+                    // Nếu không có URL, hiển thị ảnh mặc định
+                    Glide.with(this)
+                            .load(R.drawable.add_people)
+                            .circleCrop()
+                            .into(ivProfileAvatar);
+                }
             },
             e -> {
                 Toast.makeText(this, "Error loading profile: " + e.getMessage(),
@@ -311,6 +348,12 @@ public class HomeActivity extends AppCompatActivity {
         );
     }
 
+    // Hàm để mở trình chọn ảnh
+    private void openImagePicker() {
+        Intent intent = new Intent(Intent.ACTION_PICK);
+        intent.setType("image/*");
+        imagePickerLauncher.launch(intent);
+    }
     private void showSignOutConfirmation() {
         new androidx.appcompat.app.AlertDialog.Builder(this)
             .setTitle("Sign Out")
@@ -483,4 +526,83 @@ public class HomeActivity extends AppCompatActivity {
         finish();
     }
 
+
+    private void showUploadConfirmation(Uri imageUri) {
+        // Tạo một ImageView để hiển thị ảnh xem trước trong popup
+        ImageView previewImage = new ImageView(this);
+        previewImage.setImageURI(imageUri);
+        LinearLayout.LayoutParams layoutParams = new LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT, 600 // Chiều cao cố định cho ảnh xem trước
+        );
+        int margin = (int) (16 * getResources().getDisplayMetrics().density); // 16dp
+        layoutParams.setMargins(margin, margin, margin, margin);
+        previewImage.setLayoutParams(layoutParams);
+        previewImage.setScaleType(ImageView.ScaleType.CENTER_CROP);
+
+        new AlertDialog.Builder(this)
+                .setTitle("Confirm Upload")
+                .setMessage("Do you want to set this image as your profile picture?")
+                .setView(previewImage) // Hiển thị ảnh xem trước
+                .setPositiveButton("Accept", (dialog, which) -> uploadImageToCloudinary(imageUri))
+                .setNegativeButton("Cancel", null)
+                .show();
+    }
+
+    private void uploadImageToCloudinary(Uri imageUri) {
+        Toast.makeText(HomeActivity.this, "Uploading...", Toast.LENGTH_SHORT).show();
+
+        // Sử dụng Upload Preset để upload không cần ký (unsigned)
+        MediaManager.get().upload(imageUri)
+                .unsigned("my_unsigned_preset") // << QUAN TRỌNG: THAY THẾ BẰNG TÊN PRESET CỦA BẠN
+                .callback(new com.cloudinary.android.callback.UploadCallback() {
+                    @Override
+                    public void onStart(String requestId) {
+                        // Đã có Toast ở trên, không cần làm gì thêm
+                    }
+
+                    @Override
+                    public void onProgress(String requestId, long bytes, long totalBytes) {
+                        // (Tùy chọn) Có thể hiển thị thanh tiến trình ở đây
+                    }
+
+                    @Override
+                    public void onSuccess(String requestId, Map resultData) {
+                        String imageUrl = (String) resultData.get("secure_url");
+                        if (imageUrl != null) {
+                            Toast.makeText(HomeActivity.this, "Upload successful!", Toast.LENGTH_SHORT).show();
+                            saveImageUrlToFirebase(imageUrl);
+                        } else {
+                            Toast.makeText(HomeActivity.this, "Upload failed: URL is null.", Toast.LENGTH_LONG).show();
+                        }
+                    }
+
+                    @Override
+                    public void onError(String requestId, com.cloudinary.android.callback.ErrorInfo error) { // SỬA LỖI 2: SỬ DỤNG ĐÚNG ErrorInfo
+                        Toast.makeText(HomeActivity.this, "Upload failed: " + error.getDescription(), Toast.LENGTH_LONG).show();
+                    }
+
+                    @Override
+                    public void onReschedule(String requestId, com.cloudinary.android.callback.ErrorInfo error) { // SỬA LỖI 2: SỬ DỤNG ĐÚNG ErrorInfo
+                        // Tùy chọn
+                    }
+                }).dispatch();
+    }
+
+    private void saveImageUrlToFirebase(String imageUrl) {
+        String currentUserId = mAuth.getCurrentUser().getUid();
+        userRepository.updateUserAvatar(currentUserId, imageUrl,
+                aVoid -> {
+                    // Cập nhật lại ảnh đại diện ngay lập tức trên giao diện
+                    if (ivProfileAvatar != null) {
+                        Glide.with(HomeActivity.this)
+                                .load(imageUrl)
+                                .circleCrop()
+                                .placeholder(R.drawable.add_people) // Ảnh chờ
+                                .into(ivProfileAvatar);
+                    }
+                    Toast.makeText(this, "Profile picture updated.", Toast.LENGTH_SHORT).show();
+                },
+                e -> Toast.makeText(this, "Failed to update profile: " + e.getMessage(), Toast.LENGTH_SHORT).show()
+        );
+    }
 }
