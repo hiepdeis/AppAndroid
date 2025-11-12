@@ -66,6 +66,17 @@ public class GlobalSearchActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+
+        // Hide action bar if present
+        if (getSupportActionBar() != null) {
+            getSupportActionBar().hide();
+        }
+
+        // Enable edge-to-edge display
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.R) {
+            getWindow().setDecorFitsSystemWindows(false);
+        }
+
         setContentView(R.layout.activity_global_search);
 
         // Initialize repositories
@@ -317,38 +328,139 @@ public class GlobalSearchActivity extends AppCompatActivity {
     }
 
     private void showProjectMiniDetail(Project project) {
-        // TODO: Implement dialog similar to dialog_project_detail_mini
-        // For now, just show a simple toast
-        Toast.makeText(this, "Project: " + project.getName() + " (Public)", Toast.LENGTH_SHORT).show();
+        Dialog dialog = new Dialog(this);
+        dialog.requestWindowFeature(Window.FEATURE_NO_TITLE);
+        dialog.setContentView(R.layout.dialog_project_detail_mini);
 
-        // You can show the existing join project dialog here
-        // Or create a new mini detail dialog
+        Window window = dialog.getWindow();
+        if (window != null) {
+            window.setLayout(
+                (int) (getResources().getDisplayMetrics().widthPixels * 0.9),
+                LinearLayout.LayoutParams.WRAP_CONTENT
+            );
+            window.setBackgroundDrawableResource(android.R.color.transparent);
+        }
+
+        // Find views
+        TextView tvProjectName = dialog.findViewById(R.id.tvProjectName);
+        TextView tvCreatedDate = dialog.findViewById(R.id.tvCreatedDate);
+        TextView tvDescription = dialog.findViewById(R.id.tvDescription);
+        TextView tvMemberCount = dialog.findViewById(R.id.tvMemberCount);
+        TextView tvTaskCount = dialog.findViewById(R.id.tvTaskCount);
+        android.widget.Button btnCancel = dialog.findViewById(R.id.btnCancel);
+        android.widget.Button btnJoinProject = dialog.findViewById(R.id.btnJoinProject);
+
+        // Set data
+        tvProjectName.setText(project.getName());
+
+        if (project.getCreatedAt() != null) {
+            java.text.SimpleDateFormat dateFormat = new java.text.SimpleDateFormat("dd/MM/yyyy", java.util.Locale.getDefault());
+            tvCreatedDate.setText("Created: " + dateFormat.format(project.getCreatedAt()));
+        } else {
+            tvCreatedDate.setText("Created: N/A");
+        }
+
+        if (project.getDescription() != null && !project.getDescription().isEmpty()) {
+            tvDescription.setText(project.getDescription());
+        } else {
+            tvDescription.setText("No description available");
+        }
+
+        tvMemberCount.setText(String.valueOf(project.getMemberCount()));
+        tvTaskCount.setText(String.valueOf(project.getTaskCount()));
+
+        // Cancel button
+        btnCancel.setOnClickListener(v -> dialog.dismiss());
+
+        // Join button
+        btnJoinProject.setOnClickListener(v -> {
+            joinPublicProject(project, dialog);
+        });
+
+        dialog.show();
+    }
+
+    private void joinPublicProject(Project project, Dialog dialog) {
+        if (auth.getCurrentUser() == null) {
+            Toast.makeText(this, "Please login first", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        showLoading();
+
+        String currentUserId = auth.getCurrentUser().getUid();
+        String currentUserEmail = auth.getCurrentUser().getEmail();
+
+        // Get current user info
+        userRepository.getUserById(currentUserId,
+            user -> {
+                // Create ProjectMember
+                com.fptu.prm392.mad.models.ProjectMember newMember = new com.fptu.prm392.mad.models.ProjectMember(
+                    project.getProjectId(),
+                    currentUserId,
+                    user.getFullname(),
+                    currentUserEmail,
+                    user.getAvatar(),
+                    "member"
+                );
+
+                // Add to project
+                projectRepository.addMemberToProject(project.getProjectId(), newMember,
+                    aVoid -> {
+                        hideLoading();
+                        Toast.makeText(this, "Joined project successfully!", Toast.LENGTH_SHORT).show();
+                        dialog.dismiss();
+
+                        // Open project detail
+                        Intent intent = new Intent(this, ProjectDetailActivity.class);
+                        intent.putExtra("PROJECT_ID", project.getProjectId());
+                        startActivity(intent);
+                        finish();
+                    },
+                    e -> {
+                        hideLoading();
+                        Toast.makeText(this, "Error joining project: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+                    }
+                );
+            },
+            e -> {
+                hideLoading();
+                Toast.makeText(this, "Error loading user info: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+            }
+        );
     }
 
     private void showUserProfileDialog(User user) {
         Dialog dialog = new Dialog(this);
         dialog.requestWindowFeature(Window.FEATURE_NO_TITLE);
-        dialog.setContentView(R.layout.activity_user_profile);
-        dialog.getWindow().setLayout(
-            (int) (getResources().getDisplayMetrics().widthPixels * 0.9),
-            (int) (getResources().getDisplayMetrics().heightPixels * 0.7)
-        );
+        dialog.setContentView(R.layout.dialog_user_profile);
 
-        // Set user info
+        Window window = dialog.getWindow();
+        if (window != null) {
+            window.setLayout(
+                (int) (getResources().getDisplayMetrics().widthPixels * 0.85),
+                LinearLayout.LayoutParams.WRAP_CONTENT
+            );
+            window.setBackgroundDrawableResource(android.R.color.transparent);
+        }
+
+        // Find views
+        ImageView ivAvatar = dialog.findViewById(R.id.ivProfileAvatar);
         TextView tvFullname = dialog.findViewById(R.id.tvProfileFullname);
         TextView tvEmail = dialog.findViewById(R.id.tvProfileEmail);
-        ImageView ivAvatar = dialog.findViewById(R.id.ivProfileAvatar);
-        ImageView btnBack = dialog.findViewById(R.id.btnBack);
+        ImageView btnClose = dialog.findViewById(R.id.btnClose);
+        android.widget.Button btnChat = dialog.findViewById(R.id.btnChat);
 
+        // Set user info
         tvFullname.setText(user.getDisplayName());
         tvEmail.setText(user.getEmail());
         com.fptu.prm392.mad.utils.AvatarLoader.loadAvatar(this, user.getAvatar(), ivAvatar);
 
-        btnBack.setOnClickListener(v -> dialog.dismiss());
+        // Close button
+        btnClose.setOnClickListener(v -> dialog.dismiss());
 
-        // Add Chat button (you need to add this to layout or overlay it)
-        // For now, handle click on the profile to open chat
-        dialog.findViewById(R.id.tvProfileFullname).setOnClickListener(v -> {
+        // Chat button
+        btnChat.setOnClickListener(v -> {
             openChatWithUser(user);
             dialog.dismiss();
         });

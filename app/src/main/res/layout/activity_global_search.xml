@@ -3,7 +3,8 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
-    android:background="#FFFFFF">
+    android:background="@drawable/global_search_bg"
+    android:fitsSystemWindows="true">
 
     <!-- Header with Close Button -->
     <LinearLayout
@@ -12,7 +13,7 @@
         android:orientation="horizontal"
         android:gravity="center_vertical"
         android:padding="16dp"
-        android:background="#F5F5F5"
+        android:background="@drawable/bg_global_search_header_rounded"
         android:elevation="4dp">
 
         <ImageView

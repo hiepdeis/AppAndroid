@@ -55,7 +55,8 @@
         <!-- Global Search Activity - Màn hình tìm kiếm toàn cục -->
         <activity
             android:name=".GlobalSearchActivity"
-            android:exported="false" />
+            android:exported="false"
+            android:windowSoftInputMode="adjustPan" />
 
 
         <!-- Register Activity - Màn hình đăng ký -->

@@ -201,6 +201,31 @@ public class HomeActivity extends AppCompatActivity {
         }
     }
 
+    @Override
+    protected void onNewIntent(@NonNull Intent intent) {
+        super.onNewIntent(intent);
+        setIntent(intent);
+
+        // Handle new intent (e.g., opening chat from notification or other activity)
+        if (intent.hasExtra("OPEN_CHAT_ID")) {
+            String chatId = intent.getStringExtra("OPEN_CHAT_ID");
+            String chatName = intent.getStringExtra("CHAT_NAME");
+
+            // Switch to chat tab
+            bottomNavigationView.setSelectedItemId(R.id.nav_chat);
+            showChatTab();
+
+            // Open chat detail with the specific chat
+            if (chatId != null && chatName != null) {
+                // Create temporary Chat object
+                Chat chat = new Chat();
+                chat.setChatId(chatId);
+                chat.setProjectName(chatName);
+                openChatDetail(chat);
+            }
+        }
+    }
+
 
 
     private void showProjectsTab() {

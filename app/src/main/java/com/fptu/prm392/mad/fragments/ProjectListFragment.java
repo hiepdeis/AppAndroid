@@ -39,9 +39,6 @@ public class ProjectListFragment extends Fragment {
     private RecyclerView recyclerViewProjects;
     private ProjectAdapter projectAdapter;
     private LinearLayout emptyState;
-    private EditText searchBar;
-    private ImageView fabCreateProject;
-    private ImageView btnJoinProject;
 
     private ProjectRepository projectRepository;
     private TaskRepository taskRepository;
@@ -72,9 +69,10 @@ public class ProjectListFragment extends Fragment {
 
         recyclerViewProjects = view.findViewById(R.id.recyclerViewProjects);
         emptyState = view.findViewById(R.id.emptyState);
-        searchBar = view.findViewById(R.id.searchBar);
-        fabCreateProject = view.findViewById(R.id.fabCreateProject);
-        btnJoinProject = view.findViewById(R.id.btnJoinProject);
+        EditText searchBar = view.findViewById(R.id.searchBar);
+        LinearLayout searchBarContainer = view.findViewById(R.id.searchBarContainer);
+        ImageView fabCreateProject = view.findViewById(R.id.fabCreateProject);
+        ImageView btnJoinProject = view.findViewById(R.id.btnJoinProject);
         ImageView btnGlobalSearch = view.findViewById(R.id.btnGlobalSearch);
 
         // Setup RecyclerView
@@ -88,7 +86,13 @@ public class ProjectListFragment extends Fragment {
         });
         recyclerViewProjects.setAdapter(projectAdapter);
 
-        // Setup Global Search button click
+        // Setup search bar container click - open Global Search
+        searchBarContainer.setOnClickListener(v -> {
+            Intent intent = new Intent(getActivity(), GlobalSearchActivity.class);
+            startActivity(intent);
+        });
+
+        // Also setup Global Search button click
         btnGlobalSearch.setOnClickListener(v -> {
             Intent intent = new Intent(getActivity(), GlobalSearchActivity.class);
             startActivity(intent);
@@ -105,20 +109,8 @@ public class ProjectListFragment extends Fragment {
             showSearchProjectsDialog();
         });
 
-        // Setup search bar
-        searchBar.addTextChangedListener(new TextWatcher() {
-            @Override
-            public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
-
-            @Override
-            public void onTextChanged(CharSequence s, int start, int before, int count) {
-                projectAdapter.filter(s.toString());
-            }
-
-            @Override
-            public void afterTextChanged(Editable s) {}
-        });
-
+        // Note: Search bar is now disabled for local filtering
+        // All searches go through GlobalSearchActivity
         loadProjects();
 
         return view;

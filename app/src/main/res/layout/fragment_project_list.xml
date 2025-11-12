@@ -11,11 +11,15 @@
 
     <!-- Search Bar Header -->
     <LinearLayout
+        android:id="@+id/searchBarContainer"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="horizontal"
         android:padding="16dp"
-        android:gravity="center_vertical">
+        android:gravity="center_vertical"
+        android:clickable="true"
+        android:focusable="true"
+        android:background="?attr/selectableItemBackground">
 
         <EditText
             android:id="@+id/searchBar"
@@ -33,6 +37,9 @@
             android:inputType="text"
             android:imeOptions="actionSearch"
             android:maxLines="1"
+            android:focusable="false"
+            android:clickable="false"
+            android:cursorVisible="false"
             android:autofillHints="" />
 
     </LinearLayout>
@@ -98,7 +105,7 @@
             android:layout_width="60dp"
             android:layout_height="60dp"
             android:src="@drawable/global_search"
-            android:background="@drawable/bg_fab_main"
+            android:background="@drawable/bg_fab_green_light"
             android:padding="12dp"
             android:clickable="true"
             android:focusable="true"
