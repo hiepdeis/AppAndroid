@@ -253,11 +253,11 @@ public class MemberListActivity extends AppCompatActivity {
                                 null, // requestId will be generated
                                 projectId,
                                 project.getName(),
-                                user.getUserId(),
+                                user.getUserId(),        // requesterId = user được mời
                                 user.getFullname(),
                                 user.getEmail(),
                                 user.getAvatar(),
-                                user.getUserId(), // managerId = userId (user nhận invitation)
+                                project.getCreatedBy(), // managerId = manager thật sự (người gửi lời mời)
                                 "invitation" // manager mời user vào project
                             );
 

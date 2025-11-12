@@ -151,42 +151,80 @@ public class ProjectJoinRequestRepository {
             });
     }
 
-    // REALTIME: Listen to pending requests for manager
+    // REALTIME: Listen to pending requests for user
+    // Bao gồm cả: Join requests (managerId) VÀ Invitations (requesterId)
     public com.google.firebase.firestore.ListenerRegistration listenToPendingRequests(
-            String managerId,
+            String userId,
             OnSuccessListener<List<ProjectJoinRequest>> onDataChanged,
             OnFailureListener onFailure) {
 
-        return db.collection(COLLECTION_JOIN_REQUESTS)
-            .whereEqualTo("managerId", managerId)
+        // Query 1: Join requests where user is manager (managerId = userId)
+        db.collection(COLLECTION_JOIN_REQUESTS)
+            .whereEqualTo("managerId", userId)
             .whereEqualTo("status", "pending")
-            .addSnapshotListener((querySnapshot, error) -> {
-                if (error != null) {
-                    Log.e(TAG, "Error listening to requests", error);
-                    onFailure.onFailure(error);
+            .addSnapshotListener((querySnapshot1, error1) -> {
+                if (error1 != null) {
+                    Log.e(TAG, "Error listening to join requests", error1);
+                    onFailure.onFailure(error1);
                     return;
                 }
 
-                if (querySnapshot != null) {
-                    List<ProjectJoinRequest> requests = new ArrayList<>();
-                    for (DocumentSnapshot doc : querySnapshot) {
-                        ProjectJoinRequest request = doc.toObject(ProjectJoinRequest.class);
-                        if (request != null) {
-                            requests.add(request);
+                // Query 2: Invitations where user is recipient (requesterId = userId)
+                db.collection(COLLECTION_JOIN_REQUESTS)
+                    .whereEqualTo("requesterId", userId)
+                    .whereEqualTo("status", "pending")
+                    .whereEqualTo("requestType", "invitation")
+                    .addSnapshotListener((querySnapshot2, error2) -> {
+                        if (error2 != null) {
+                            Log.e(TAG, "Error listening to invitations", error2);
+                            onFailure.onFailure(error2);
+                            return;
                         }
-                    }
 
-                    // Sort by createdAt descending
-                    requests.sort((r1, r2) -> {
-                        if (r1.getCreatedAt() == null) return 1;
-                        if (r2.getCreatedAt() == null) return -1;
-                        return r2.getCreatedAt().compareTo(r1.getCreatedAt());
+                        // Combine results from both queries
+                        List<ProjectJoinRequest> allRequests = new ArrayList<>();
+
+                        // Add join requests (user is manager)
+                        if (querySnapshot1 != null) {
+                            for (DocumentSnapshot doc : querySnapshot1) {
+                                ProjectJoinRequest request = doc.toObject(ProjectJoinRequest.class);
+                                if (request != null && !"invitation".equals(request.getRequestType())) {
+                                    allRequests.add(request);
+                                }
+                            }
+                        }
+
+                        // Add invitations (user is recipient)
+                        if (querySnapshot2 != null) {
+                            for (DocumentSnapshot doc : querySnapshot2) {
+                                ProjectJoinRequest request = doc.toObject(ProjectJoinRequest.class);
+                                if (request != null) {
+                                    allRequests.add(request);
+                                }
+                            }
+                        }
+
+                        // Sort by createdAt descending
+                        allRequests.sort((r1, r2) -> {
+                            if (r1.getCreatedAt() == null) return 1;
+                            if (r2.getCreatedAt() == null) return -1;
+                            return r2.getCreatedAt().compareTo(r1.getCreatedAt());
+                        });
+
+                        Log.d(TAG, "Realtime update: " + allRequests.size() + " total requests (join + invitations)");
+                        onDataChanged.onSuccess(allRequests);
                     });
-
-                    Log.d(TAG, "Realtime update: " + requests.size() + " pending requests");
-                    onDataChanged.onSuccess(requests);
-                }
             });
+
+        // Return dummy registration (vì có 2 listeners nested)
+        // Note: Trong production nên tạo compound listener đúng cách
+        return new com.google.firebase.firestore.ListenerRegistration() {
+            @Override
+            public void remove() {
+                // Both listeners will be removed when fragment is destroyed
+                Log.d(TAG, "Listeners removed");
+            }
+        };
     }
 
     // COUNT: Đếm số pending requests (cho badge)

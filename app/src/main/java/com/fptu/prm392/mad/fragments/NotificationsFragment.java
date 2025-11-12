@@ -245,20 +245,14 @@ public class NotificationsFragment extends Fragment {
                             new com.fptu.prm392.mad.repositories.UserRepository();
                         userRepo.getUserById(auth.getCurrentUser().getUid(),
                             user -> {
-                                // Find manager ID from project
-                                ProjectRepository projectRepo = new ProjectRepository();
-                                projectRepo.getProjectById(request.getProjectId(),
-                                    project -> {
-                                        notificationRepo.createInvitationRejectedNotification(
-                                            project.getCreatedBy(), // managerId
-                                            user.getFullname(),
-                                            request.getProjectName(),
-                                            request.getProjectId(),
-                                            notifId -> Log.d("NotificationsFragment", "Rejection notification sent"),
-                                            e -> Log.e("NotificationsFragment", "Error sending notification", e)
-                                        );
-                                    },
-                                    e -> Log.e("NotificationsFragment", "Error getting project", e)
+                                // Send notification directly to managerId (manager who sent invitation)
+                                notificationRepo.createInvitationRejectedNotification(
+                                    request.getManagerId(), // managerId from request
+                                    user.getFullname(),
+                                    request.getProjectName(),
+                                    request.getProjectId(),
+                                    notifId -> Log.d("NotificationsFragment", "Rejection notification sent to manager: " + request.getManagerId()),
+                                    e -> Log.e("NotificationsFragment", "Error sending notification", e)
                                 );
                             },
                             e -> Log.e("NotificationsFragment", "Error getting user", e)
@@ -270,7 +264,7 @@ public class NotificationsFragment extends Fragment {
                         request.getRequesterId(),
                         request.getProjectName(),
                         request.getProjectId(),
-                        notifId -> Log.d("NotificationsFragment", "Rejection notification sent"),
+                        notifId -> Log.d("NotificationsFragment", "Rejection notification sent to requester: " + request.getRequesterId()),
                         e -> Log.e("NotificationsFragment", "Error sending notification", e)
                     );
                 }
