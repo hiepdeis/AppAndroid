@@ -19,8 +19,11 @@ import com.fptu.prm392.mad.adapters.AddUserAdapter;
 import com.fptu.prm392.mad.adapters.MemberAdapter;
 import com.fptu.prm392.mad.models.ProjectMember;
 import com.fptu.prm392.mad.models.User;
+import com.fptu.prm392.mad.repositories.NotificationRepository;
 import com.fptu.prm392.mad.repositories.ProjectRepository;
 import com.fptu.prm392.mad.repositories.UserRepository;
+import com.fptu.prm392.mad.utils.NetworkMonitor;
+import com.fptu.prm392.mad.utils.NotificationHelper;
 import com.google.firebase.auth.FirebaseAuth;
 
 import java.util.ArrayList;
@@ -34,10 +37,12 @@ public class MemberListActivity extends AppCompatActivity {
 
     private ProjectRepository projectRepository;
     private UserRepository userRepository;
+    private NotificationRepository notificationRepository;
     private MemberAdapter memberAdapter;
     private String projectId;
     private String projectOwnerId;
     private String currentUserId;
+    private String projectName;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -63,6 +68,7 @@ public class MemberListActivity extends AppCompatActivity {
         // Initialize repositories
         projectRepository = new ProjectRepository();
         userRepository = new UserRepository();
+        notificationRepository = new NotificationRepository();
 
         // Get current user ID
         FirebaseAuth mAuth = FirebaseAuth.getInstance();
@@ -95,6 +101,7 @@ public class MemberListActivity extends AppCompatActivity {
         projectRepository.getProjectById(projectId,
             project -> {
                 projectOwnerId = project.getCreatedBy();
+                projectName = project.getName();
                 updateUIBasedOnOwnership();
                 loadProjectMembers();
             },
@@ -139,11 +146,23 @@ public class MemberListActivity extends AppCompatActivity {
             .show();
     }
 
+    private boolean isOffline() {
+        return !NetworkMonitor.getInstance(this).isNetworkAvailable();
+    }
+
     private void deleteMember(ProjectMember member) {
+        if (isOffline()) {
+            Toast.makeText(this,
+                "Không có kết nối internet. Yêu cầu sẽ được thực thi khi có mạng trở lại.",
+                Toast.LENGTH_LONG).show();
+        }
         projectRepository.removeMemberFromProject(projectId, member.getUserId(),
             aVoid -> {
                 Toast.makeText(this, "Member removed successfully", Toast.LENGTH_SHORT).show();
                 loadProjectMembers();
+                showLocalNotification("Xóa thành viên",
+                    "Đã xóa " + displayName(member) + " khỏi project",
+                    projectId);
             },
             e -> {
                 Toast.makeText(this, "Error removing member: " + e.getMessage(),
@@ -233,6 +252,11 @@ public class MemberListActivity extends AppCompatActivity {
     }
 
     private void addMemberToProject(User user, android.app.Dialog addDialog) {
+        if (isOffline()) {
+            Toast.makeText(this,
+                "Không có kết nối internet. Yêu cầu sẽ được thực thi khi có mạng trở lại.",
+                Toast.LENGTH_LONG).show();
+        }
         ProjectMember newMember = new ProjectMember(
             projectId,
             user.getUserId(),
@@ -245,12 +269,41 @@ public class MemberListActivity extends AppCompatActivity {
         projectRepository.addMemberToProject(projectId, newMember,
             aVoid -> {
                 Toast.makeText(this, "Member added successfully", Toast.LENGTH_SHORT).show();
+                
+                // Save notification to Firestore for the new member
+                notificationRepository.saveNotificationToFirestore(
+                    user.getUserId(),
+                    "member_added",
+                    "Thêm vào project",
+                    "Bạn đã được thêm vào project: " + (projectName != null ? projectName : "project"),
+                    projectId,
+                    null,
+                    notificationId -> {},
+                    e -> {}
+                );
+                
                 addDialog.dismiss();
                 loadProjectMembers();
+                showLocalNotification("Thêm thành viên",
+                    "Đã thêm " + displayName(newMember) + " vào project",
+                    projectId);
             },
             e -> Toast.makeText(this, "Error adding member: " + e.getMessage(),
                 Toast.LENGTH_SHORT).show()
         );
+    }
+
+    private String displayName(ProjectMember member) {
+        return member.getFullname() != null && !member.getFullname().isEmpty()
+            ? member.getFullname()
+            : member.getEmail();
+    }
+
+    private void showLocalNotification(String title, String content, String projectId) {
+        NotificationHelper.createNotificationChannel(this);
+        if (NotificationHelper.isNotificationPermissionGranted(this)) {
+            NotificationHelper.showNotification(this, title, content, projectId);
+        }
     }
 }
 

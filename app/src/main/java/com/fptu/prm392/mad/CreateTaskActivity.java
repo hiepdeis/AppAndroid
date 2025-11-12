@@ -22,8 +22,11 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.fptu.prm392.mad.adapters.MemberSelectableAdapter;
 import com.fptu.prm392.mad.adapters.SelectedAssigneeAdapter;
 import com.fptu.prm392.mad.models.ProjectMember;
+import com.fptu.prm392.mad.repositories.NotificationRepository;
 import com.fptu.prm392.mad.repositories.ProjectRepository;
 import com.fptu.prm392.mad.repositories.TaskRepository;
+import com.fptu.prm392.mad.utils.NetworkMonitor;
+import com.fptu.prm392.mad.utils.NotificationHelper;
 import com.google.android.material.textfield.TextInputEditText;
 import com.google.firebase.Timestamp;
 import com.google.firebase.auth.FirebaseAuth;
@@ -48,6 +51,7 @@ public class CreateTaskActivity extends AppCompatActivity {
 
     private TaskRepository taskRepository;
     private ProjectRepository projectRepository;
+    private NotificationRepository notificationRepository;
     private String projectId;
     private Date selectedDueDate = null;
     private final SimpleDateFormat dateFormat = new SimpleDateFormat("dd/MM/yyyy", Locale.getDefault());
@@ -63,6 +67,7 @@ public class CreateTaskActivity extends AppCompatActivity {
 
         taskRepository = new TaskRepository();
         projectRepository = new ProjectRepository();
+        notificationRepository = new NotificationRepository();
 
         // Get projectId from intent
         projectId = getIntent().getStringExtra("PROJECT_ID");
@@ -98,7 +103,14 @@ public class CreateTaskActivity extends AppCompatActivity {
         btnBack.setOnClickListener(v -> finish());
         layoutDueDate.setOnClickListener(v -> showDatePicker());
         btnAddAssignees.setOnClickListener(v -> showSelectAssigneesDialog());
-        btnCreateTask.setOnClickListener(v -> createTask());
+        btnCreateTask.setOnClickListener(v -> {
+            if (!NetworkMonitor.getInstance(this).isNetworkAvailable()) {
+                Toast.makeText(this,
+                    "Không có kết nối internet. Yêu cầu sẽ được thực thi khi có mạng trở lại.",
+                    Toast.LENGTH_LONG).show();
+            }
+            createTask();
+        });
 
         // Load project members
         loadProjectMembers();
@@ -259,7 +271,7 @@ public class CreateTaskActivity extends AppCompatActivity {
 
         // Prepare assignees list - creator is always the first assignee
         List<String> assigneeIds = new ArrayList<>();
-        String currentUserId = FirebaseAuth.getInstance().getCurrentUser().getUid();
+        final String currentUserId = FirebaseAuth.getInstance().getCurrentUser().getUid();
         assigneeIds.add(currentUserId); // Người tạo luôn là assignee đầu tiên
 
         // Add selected assignees (avoid duplicates)
@@ -278,6 +290,26 @@ public class CreateTaskActivity extends AppCompatActivity {
                     // Task created, now update status, dueDate, and assignees
                     taskRepository.updateTaskDetails(taskId, finalStatus, finalDueTimestamp, assigneeIds,
                             aVoid -> {
+                                showLocalNotification("Task mới",
+                                    "Task '" + title + "' đã được tạo",
+                                    projectId);
+                                
+                                // Save notification to Firestore for each assignee
+                                for (String assigneeId : assigneeIds) {
+                                    if (!assigneeId.equals(currentUserId)) { // Don't notify the creator
+                                        notificationRepository.saveNotificationToFirestore(
+                                            assigneeId,
+                                            "task_assigned",
+                                            "Task mới được giao",
+                                            "Bạn được giao task: " + title,
+                                            projectId,
+                                            taskId,
+                                            notificationId -> {},
+                                            e -> {}
+                                        );
+                                    }
+                                }
+                                
                                 Toast.makeText(CreateTaskActivity.this,
                                         "Task created successfully!", Toast.LENGTH_SHORT).show();
                                 finish();
@@ -296,6 +328,13 @@ public class CreateTaskActivity extends AppCompatActivity {
                     btnCreateTask.setEnabled(true);
                 }
         );
+    }
+
+    private void showLocalNotification(String title, String content, String projectId) {
+        NotificationHelper.createNotificationChannel(this);
+        if (NotificationHelper.isNotificationPermissionGranted(this)) {
+            NotificationHelper.showNotification(this, title, content, projectId);
+        }
     }
 }
 

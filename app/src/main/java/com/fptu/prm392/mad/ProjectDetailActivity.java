@@ -26,9 +26,12 @@ import com.fptu.prm392.mad.models.ProjectMember;
 import com.fptu.prm392.mad.models.Task;
 import com.fptu.prm392.mad.models.User;
 import com.fptu.prm392.mad.repositories.ChatRepository;
+import com.fptu.prm392.mad.repositories.NotificationRepository;
 import com.fptu.prm392.mad.repositories.ProjectRepository;
 import com.fptu.prm392.mad.repositories.TaskRepository;
 import com.fptu.prm392.mad.repositories.UserRepository;
+import com.fptu.prm392.mad.utils.NetworkMonitor;
+import com.fptu.prm392.mad.utils.NotificationHelper;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -44,6 +47,7 @@ public class ProjectDetailActivity extends AppCompatActivity {
     private ProjectRepository projectRepository;
     private TaskRepository taskRepository;
     private UserRepository userRepository;
+    private NotificationRepository notificationRepository;
     private com.google.firebase.auth.FirebaseAuth auth;
     private String projectId;
     private Project currentProject;
@@ -66,6 +70,7 @@ public class ProjectDetailActivity extends AppCompatActivity {
         projectRepository = new ProjectRepository();
         taskRepository = new TaskRepository();
         userRepository = new UserRepository();
+        notificationRepository = new NotificationRepository();
         auth = com.google.firebase.auth.FirebaseAuth.getInstance();
 
         // Get projectId from intent
@@ -372,7 +377,16 @@ public class ProjectDetailActivity extends AppCompatActivity {
         });
     }
 
+    private boolean isOffline() {
+        return !NetworkMonitor.getInstance(this).isNetworkAvailable();
+    }
+
     private void updateTaskStatus(Task task, String newStatus) {
+        if (isOffline()) {
+            Toast.makeText(this,
+                "Không có kết nối internet. Yêu cầu sẽ được thực thi khi có mạng trở lại.",
+                Toast.LENGTH_LONG).show();
+        }
         // Show loading state
         Toast.makeText(this, "Moving task...", Toast.LENGTH_SHORT).show();
 
@@ -678,6 +692,11 @@ public class ProjectDetailActivity extends AppCompatActivity {
     }
 
     private void addMemberToProject(User user, Dialog addDialog, Dialog parentDialog) {
+        if (isOffline()) {
+            Toast.makeText(this,
+                "Không có kết nối internet. Yêu cầu sẽ được thực thi khi có mạng trở lại.",
+                Toast.LENGTH_LONG).show();
+        }
         // Create ProjectMember object
         ProjectMember newMember = new ProjectMember(
             projectId,
@@ -692,6 +711,26 @@ public class ProjectDetailActivity extends AppCompatActivity {
         projectRepository.addMemberToProject(projectId, newMember,
             aVoid -> {
                 Toast.makeText(this, "Member added successfully", Toast.LENGTH_SHORT).show();
+
+                // Save notification to Firestore for the new member
+                String memberName = user.getFullname() != null && !user.getFullname().isEmpty() 
+                    ? user.getFullname() : user.getEmail();
+                String projectName = currentProject != null ? currentProject.getName() : "project";
+                
+                notificationRepository.saveNotificationToFirestore(
+                    user.getUserId(),
+                    "member_added",
+                    "Thêm vào project",
+                    "Bạn đã được thêm vào project: " + projectName,
+                    projectId,
+                    null,
+                    notificationId -> {},
+                    e -> {}
+                );
+
+                showLocalNotification("Thêm thành viên",
+                    "Đã thêm " + memberName + " vào project",
+                    projectId);
 
                 // Close add dialog
                 addDialog.dismiss();
@@ -710,6 +749,13 @@ public class ProjectDetailActivity extends AppCompatActivity {
                     Toast.LENGTH_SHORT).show();
             }
         );
+    }
+
+    private void showLocalNotification(String title, String content, String projectId) {
+        NotificationHelper.createNotificationChannel(this);
+        if (NotificationHelper.isNotificationPermissionGranted(this)) {
+            NotificationHelper.showNotification(this, title, content, projectId);
+        }
     }
 
     private void showDeleteMemberConfirmation(ProjectMember member, Dialog parentDialog) {

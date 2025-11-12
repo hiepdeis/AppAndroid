@@ -11,6 +11,8 @@ import android.widget.Toast;
 import androidx.appcompat.app.AppCompatActivity;
 
 import com.fptu.prm392.mad.repositories.ProjectRepository;
+import com.fptu.prm392.mad.utils.NetworkMonitor;
+import com.fptu.prm392.mad.utils.SyncStatusMonitor;
 import com.google.android.material.textfield.TextInputEditText;
 
 public class CreateProjectActivity extends AppCompatActivity {
@@ -70,6 +72,18 @@ public class CreateProjectActivity extends AppCompatActivity {
         progressBar.setVisibility(View.VISIBLE);
         btnCreateProject.setEnabled(false);
 
+        // Kiểm tra trạng thái mạng hiện tại
+        NetworkMonitor networkMonitor = NetworkMonitor.getInstance(this);
+        boolean isOffline = !networkMonitor.isNetworkAvailable();
+        if (isOffline) {
+            Toast.makeText(this,
+                "Không có kết nối internet. Yêu cầu sẽ được thực thi khi có mạng trở lại.",
+                Toast.LENGTH_LONG).show();
+            // Không giữ spinner nếu offline để tránh người dùng chờ vô hạn
+            progressBar.setVisibility(View.GONE);
+            btnCreateProject.setEnabled(true);
+        }
+
         // GỌI FIRESTORE ĐỂ LƯU DỮ LIỆU
         projectRepository.createProject(
             projectName,
@@ -80,9 +94,18 @@ public class CreateProjectActivity extends AppCompatActivity {
                 progressBar.setVisibility(View.GONE);
                 btnCreateProject.setEnabled(true);
 
-                Toast.makeText(CreateProjectActivity.this,
-                    "Project created successfully!",
-                    Toast.LENGTH_SHORT).show();
+                if (isOffline) {
+                    Toast.makeText(CreateProjectActivity.this,
+                        "Project đã được lưu offline và sẽ đồng bộ khi có internet.",
+                        Toast.LENGTH_LONG).show();
+
+                    SyncStatusMonitor syncStatusMonitor = new SyncStatusMonitor(CreateProjectActivity.this);
+                    syncStatusMonitor.addPendingProject(projectId, projectName);
+                } else {
+                    Toast.makeText(CreateProjectActivity.this,
+                        "Project created successfully!",
+                        Toast.LENGTH_SHORT).show();
+                }
 
                 // Chuyển đến ProjectDetailActivity
                 android.content.Intent intent = new android.content.Intent(
