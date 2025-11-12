@@ -406,7 +406,7 @@ public class GlobalSearchActivity extends AppCompatActivity {
                 // Get current user info
                 userRepository.getUserById(currentUserId,
                     user -> {
-                        // Create Join Request
+                        // Create Join Request (user xin vào)
                         com.fptu.prm392.mad.models.ProjectJoinRequest request =
                             new com.fptu.prm392.mad.models.ProjectJoinRequest(
                                 null, // requestId will be generated
@@ -416,7 +416,8 @@ public class GlobalSearchActivity extends AppCompatActivity {
                                 user.getFullname(),
                                 currentUserEmail,
                                 user.getAvatar(),
-                                project.getCreatedBy() // managerId
+                                project.getCreatedBy(), // managerId (người nhận request)
+                                "join_request" // user xin vào project
                             );
 
                         // Send request

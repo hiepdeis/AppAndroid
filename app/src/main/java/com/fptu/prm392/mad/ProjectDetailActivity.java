@@ -575,8 +575,24 @@ public class ProjectDetailActivity extends AppCompatActivity {
         });
         rvMembers.setAdapter(memberAdapter);
 
-        // Load members
-        loadProjectMembers(memberAdapter);
+        // Setup realtime listener for members
+        com.google.firebase.firestore.ListenerRegistration membersListener =
+            projectRepository.listenToProjectMembers(projectId,
+                members -> {
+                    memberAdapter.setMembers(members);
+                },
+                e -> {
+                    Toast.makeText(this, "Error loading members: " + e.getMessage(),
+                        Toast.LENGTH_SHORT).show();
+                }
+            );
+
+        // Remove listener when dialog is dismissed
+        dialog.setOnDismissListener(d -> {
+            if (membersListener != null) {
+                membersListener.remove();
+            }
+        });
 
         // Add member button click
         btnAddMember.setOnClickListener(v -> {
@@ -695,11 +711,11 @@ public class ProjectDetailActivity extends AppCompatActivity {
         requestRepo.hasPendingRequest(projectId, user.getUserId(),
             hasPending -> {
                 if (hasPending) {
-                    Toast.makeText(this, "This user already has a pending request", Toast.LENGTH_LONG).show();
+                    Toast.makeText(this, "This user already has a pending invitation", Toast.LENGTH_LONG).show();
                     return;
                 }
 
-                // Create Join Request (manager invites user)
+                // Create Invitation Request (manager mời user)
                 com.fptu.prm392.mad.models.ProjectJoinRequest request =
                     new com.fptu.prm392.mad.models.ProjectJoinRequest(
                         null, // requestId will be generated
@@ -709,10 +725,11 @@ public class ProjectDetailActivity extends AppCompatActivity {
                         user.getFullname(),
                         user.getEmail(),
                         user.getAvatar(),
-                        user.getUserId() // managerId = userId (user receives the request)
+                        user.getUserId(), // managerId = userId (user nhận invitation)
+                        "invitation" // manager mời user vào project
                     );
 
-                // Send request
+                // Send invitation
                 requestRepo.createJoinRequest(request,
                     requestId -> {
                         Toast.makeText(this, "Invitation sent to " + user.getFullname(), Toast.LENGTH_LONG).show();

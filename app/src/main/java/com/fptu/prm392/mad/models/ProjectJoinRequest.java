@@ -6,11 +6,12 @@ public class ProjectJoinRequest {
     private String requestId;
     private String projectId;
     private String projectName;
-    private String requesterId;      // User muốn join
+    private String requesterId;      // User muốn join hoặc được mời
     private String requesterName;
     private String requesterEmail;
     private String requesterAvatar;
-    private String managerId;        // Manager của project
+    private String managerId;        // Manager của project hoặc người nhận request
+    private String requestType;      // "join_request" (user xin vào) hoặc "invitation" (manager mời)
     private String status;           // "pending", "approved", "rejected"
     private Timestamp createdAt;
     private Timestamp updatedAt;
@@ -22,7 +23,7 @@ public class ProjectJoinRequest {
     // Constructor đầy đủ
     public ProjectJoinRequest(String requestId, String projectId, String projectName,
                              String requesterId, String requesterName, String requesterEmail,
-                             String requesterAvatar, String managerId) {
+                             String requesterAvatar, String managerId, String requestType) {
         this.requestId = requestId;
         this.projectId = projectId;
         this.projectName = projectName;
@@ -31,6 +32,7 @@ public class ProjectJoinRequest {
         this.requesterEmail = requesterEmail;
         this.requesterAvatar = requesterAvatar;
         this.managerId = managerId;
+        this.requestType = requestType;
         this.status = "pending";
         this.createdAt = Timestamp.now();
         this.updatedAt = Timestamp.now();
@@ -99,6 +101,14 @@ public class ProjectJoinRequest {
 
     public void setManagerId(String managerId) {
         this.managerId = managerId;
+    }
+
+    public String getRequestType() {
+        return requestType;
+    }
+
+    public void setRequestType(String requestType) {
+        this.requestType = requestType;
     }
 
     public String getStatus() {

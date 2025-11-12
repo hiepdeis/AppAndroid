@@ -82,15 +82,26 @@ public class JoinRequestAdapter extends RecyclerView.Adapter<JoinRequestAdapter.
         }
 
         public void bind(ProjectJoinRequest request, int position) {
-            // Set project name
-            tvProjectName.setText(request.getProjectName());
+            // Check request type
+            boolean isInvitation = "invitation".equals(request.getRequestType());
 
-            // Set requester info
-            tvRequesterName.setText(request.getRequesterName());
-            tvRequesterEmail.setText(request.getRequesterEmail());
+            if (isInvitation) {
+                // INVITATION: Manager mời user → Hiển thị thông tin PROJECT
+                tvProjectName.setText("Invitation to join: " + request.getProjectName());
+                tvRequesterName.setText("Project Manager invited you");
+                tvRequesterEmail.setText("Click Accept to join this project");
 
-            // Load avatar
-            AvatarLoader.loadAvatar(itemView.getContext(), request.getRequesterAvatar(), ivRequesterAvatar);
+                // Load project icon instead of user avatar (or default icon)
+                ivRequesterAvatar.setImageResource(R.drawable.project);
+            } else {
+                // JOIN REQUEST: User xin vào → Hiển thị thông tin USER
+                tvProjectName.setText("Join request for: " + request.getProjectName());
+                tvRequesterName.setText(request.getRequesterName());
+                tvRequesterEmail.setText(request.getRequesterEmail());
+
+                // Load user avatar
+                AvatarLoader.loadAvatar(itemView.getContext(), request.getRequesterAvatar(), ivRequesterAvatar);
+            }
 
             // Set timestamp
             if (request.getCreatedAt() != null) {

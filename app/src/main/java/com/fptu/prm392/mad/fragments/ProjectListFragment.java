@@ -46,6 +46,9 @@ public class ProjectListFragment extends Fragment {
 
     private OnProjectClickListener projectClickListener;
 
+    // Realtime listener
+    private com.google.firebase.firestore.ListenerRegistration projectsListener;
+
     public interface OnProjectClickListener {
         void onProjectClick(Project project);
     }
@@ -111,9 +114,48 @@ public class ProjectListFragment extends Fragment {
 
         // Note: Search bar is now disabled for local filtering
         // All searches go through GlobalSearchActivity
-        loadProjects();
+        startListeningToProjects();
 
         return view;
+    }
+
+    @Override
+    public void onDestroyView() {
+        super.onDestroyView();
+        // Stop listening when fragment is destroyed
+        stopListeningToProjects();
+    }
+
+    private void startListeningToProjects() {
+        // Setup realtime listener
+        projectsListener = projectRepository.listenToMyProjects(
+            projects -> {
+                if (projects.isEmpty()) {
+                    emptyState.setVisibility(View.VISIBLE);
+                    recyclerViewProjects.setVisibility(View.GONE);
+                } else {
+                    emptyState.setVisibility(View.GONE);
+                    recyclerViewProjects.setVisibility(View.VISIBLE);
+                    projectAdapter.setProjects(projects);
+
+                    // Load todo count cho từng project
+                    loadTodoCountsForProjects(projects);
+                }
+            },
+            e -> {
+                if (getContext() != null) {
+                    Toast.makeText(getContext(), "Error loading projects: " + e.getMessage(),
+                        Toast.LENGTH_SHORT).show();
+                }
+            }
+        );
+    }
+
+    private void stopListeningToProjects() {
+        if (projectsListener != null) {
+            projectsListener.remove();
+            projectsListener = null;
+        }
     }
 
     private void loadProjects() {
@@ -167,7 +209,7 @@ public class ProjectListFragment extends Fragment {
     @Override
     public void onResume() {
         super.onResume();
-        loadProjects();
+        // Realtime listener đã active, không cần reload
     }
 
     private void showSearchProjectsDialog() {
@@ -333,7 +375,7 @@ public class ProjectListFragment extends Fragment {
                     new com.fptu.prm392.mad.repositories.UserRepository();
                 userRepository.getUserById(currentUserId,
                     user -> {
-                        // Create Join Request
+                        // Create Join Request (user xin vào)
                         com.fptu.prm392.mad.models.ProjectJoinRequest request =
                             new com.fptu.prm392.mad.models.ProjectJoinRequest(
                                 null, // requestId will be generated
@@ -343,7 +385,8 @@ public class ProjectListFragment extends Fragment {
                                 user.getFullname(),
                                 currentUserEmail,
                                 user.getAvatar(),
-                                project.getCreatedBy() // managerId
+                                project.getCreatedBy(), // managerId (người nhận request)
+                                "join_request" // user xin vào project
                             );
 
                         // Send request

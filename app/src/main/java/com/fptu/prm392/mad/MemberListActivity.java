@@ -247,7 +247,7 @@ public class MemberListActivity extends AppCompatActivity {
                 // Get project info first
                 projectRepository.getProjectById(projectId,
                     project -> {
-                        // Create Join Request (manager invites user)
+                        // Create Invitation Request (manager mời user)
                         com.fptu.prm392.mad.models.ProjectJoinRequest request =
                             new com.fptu.prm392.mad.models.ProjectJoinRequest(
                                 null, // requestId will be generated
@@ -257,10 +257,11 @@ public class MemberListActivity extends AppCompatActivity {
                                 user.getFullname(),
                                 user.getEmail(),
                                 user.getAvatar(),
-                                user.getUserId() // managerId = userId (user receives the request)
+                                user.getUserId(), // managerId = userId (user nhận invitation)
+                                "invitation" // manager mời user vào project
                             );
 
-                        // Send request
+                        // Send invitation
                         requestRepo.createJoinRequest(request,
                             requestId -> {
                                 Toast.makeText(this, "Invitation sent to " + user.getFullname(), Toast.LENGTH_LONG).show();

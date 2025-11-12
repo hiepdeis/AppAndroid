@@ -1,6 +1,7 @@
 package com.fptu.prm392.mad.fragments;
 
 import android.os.Bundle;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -160,8 +161,53 @@ public class NotificationsFragment extends Fragment {
     }
 
     private void handleRejectRequest(ProjectJoinRequest request, int position) {
+        // Determine notification recipient based on request type
+        boolean isInvitation = "invitation".equals(request.getRequestType());
+
         requestRepository.rejectRequest(request.getRequestId(),
             aVoid -> {
+                // Send notification to the rejected party
+                com.fptu.prm392.mad.repositories.NotificationRepository notificationRepo =
+                    new com.fptu.prm392.mad.repositories.NotificationRepository();
+
+                if (isInvitation) {
+                    // Invitation rejected by user → Notify manager
+                    // Get current user (who rejected)
+                    if (auth.getCurrentUser() != null) {
+                        com.fptu.prm392.mad.repositories.UserRepository userRepo =
+                            new com.fptu.prm392.mad.repositories.UserRepository();
+                        userRepo.getUserById(auth.getCurrentUser().getUid(),
+                            user -> {
+                                // Find manager ID from project
+                                ProjectRepository projectRepo = new ProjectRepository();
+                                projectRepo.getProjectById(request.getProjectId(),
+                                    project -> {
+                                        notificationRepo.createInvitationRejectedNotification(
+                                            project.getCreatedBy(), // managerId
+                                            user.getFullname(),
+                                            request.getProjectName(),
+                                            request.getProjectId(),
+                                            notifId -> Log.d("NotificationsFragment", "Rejection notification sent"),
+                                            e -> Log.e("NotificationsFragment", "Error sending notification", e)
+                                        );
+                                    },
+                                    e -> Log.e("NotificationsFragment", "Error getting project", e)
+                                );
+                            },
+                            e -> Log.e("NotificationsFragment", "Error getting user", e)
+                        );
+                    }
+                } else {
+                    // Join request rejected by manager → Notify requester
+                    notificationRepo.createRequestRejectedNotification(
+                        request.getRequesterId(),
+                        request.getProjectName(),
+                        request.getProjectId(),
+                        notifId -> Log.d("NotificationsFragment", "Rejection notification sent"),
+                        e -> Log.e("NotificationsFragment", "Error sending notification", e)
+                    );
+                }
+
                 Toast.makeText(getContext(), "Request rejected", Toast.LENGTH_SHORT).show();
                 // Remove from list
                 adapter.removeItem(position);

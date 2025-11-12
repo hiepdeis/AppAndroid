@@ -144,6 +144,9 @@ public class HomeActivity extends AppCompatActivity {
         // Check if opened from Project/Task chat button
         handleIncomingIntent();
 
+        // Check for rejection notifications
+        checkRejectionNotifications();
+
         // Tự động chọn tab Project khi vào màn hình (nếu không có intent đặc biệt)
         if (!getIntent().hasExtra("OPEN_CHAT_ID")) {
             bottomNavigationView.setSelectedItemId(R.id.nav_project);
@@ -225,6 +228,41 @@ public class HomeActivity extends AppCompatActivity {
             notificationCountListener.remove();
             notificationCountListener = null;
         }
+    }
+
+    private void checkRejectionNotifications() {
+        if (mAuth.getCurrentUser() == null) return;
+
+        String currentUserId = mAuth.getCurrentUser().getUid();
+
+        // Query unread rejection notifications
+        com.google.firebase.firestore.FirebaseFirestore.getInstance()
+            .collection("notifications")
+            .whereEqualTo("userId", currentUserId)
+            .whereEqualTo("isRead", false)
+            .whereIn("type", java.util.Arrays.asList("request_rejected", "invitation_rejected"))
+            .get()
+            .addOnSuccessListener(querySnapshot -> {
+                if (!querySnapshot.isEmpty()) {
+                    // Show notifications as toasts
+                    for (com.google.firebase.firestore.DocumentSnapshot doc : querySnapshot) {
+                        com.fptu.prm392.mad.models.Notification notification =
+                            doc.toObject(com.fptu.prm392.mad.models.Notification.class);
+                        if (notification != null) {
+                            // Show toast
+                            Toast.makeText(this,
+                                notification.getTitle() + ": " + notification.getMessage(),
+                                Toast.LENGTH_LONG).show();
+
+                            // Mark as read
+                            doc.getReference().update("isRead", true);
+                        }
+                    }
+                }
+            })
+            .addOnFailureListener(e -> {
+                android.util.Log.e("HomeActivity", "Error checking rejection notifications", e);
+            });
     }
 
     private void handleIncomingIntent() {

@@ -493,6 +493,79 @@ public class ProjectRepository {
             });
     }
 
+    // REALTIME: Listen to project members
+    public com.google.firebase.firestore.ListenerRegistration listenToProjectMembers(
+            String projectId,
+            OnSuccessListener<List<com.fptu.prm392.mad.models.ProjectMember>> onDataChanged,
+            OnFailureListener onFailure) {
+
+        return db.collection(COLLECTION_PROJECTS)
+            .document(projectId)
+            .collection("members")
+            .addSnapshotListener((querySnapshot, error) -> {
+                if (error != null) {
+                    Log.e(TAG, "Error listening to members", error);
+                    onFailure.onFailure(error);
+                    return;
+                }
+
+                if (querySnapshot != null) {
+                    List<com.fptu.prm392.mad.models.ProjectMember> members = new ArrayList<>();
+                    for (com.google.firebase.firestore.DocumentSnapshot doc : querySnapshot) {
+                        com.fptu.prm392.mad.models.ProjectMember member =
+                            doc.toObject(com.fptu.prm392.mad.models.ProjectMember.class);
+                        if (member != null) {
+                            members.add(member);
+                        }
+                    }
+                    Log.d(TAG, "Realtime members update: " + members.size());
+                    onDataChanged.onSuccess(members);
+                }
+            });
+    }
+
+    // REALTIME: Listen to my projects (projects user is member of)
+    public com.google.firebase.firestore.ListenerRegistration listenToMyProjects(
+            OnSuccessListener<List<Project>> onDataChanged,
+            OnFailureListener onFailure) {
+
+        String currentUserId = auth.getCurrentUser().getUid();
+
+        return db.collection(COLLECTION_PROJECTS)
+            .whereArrayContains("memberIds", currentUserId)
+            .addSnapshotListener((querySnapshot, error) -> {
+                if (error != null) {
+                    Log.e(TAG, "Error listening to my projects", error);
+                    onFailure.onFailure(error);
+                    return;
+                }
+
+                if (querySnapshot != null) {
+                    List<Project> projects = new ArrayList<>();
+                    for (com.google.firebase.firestore.DocumentSnapshot doc : querySnapshot) {
+                        try {
+                            Project project = doc.toObject(Project.class);
+                            if (project != null) {
+                                projects.add(project);
+                            }
+                        } catch (RuntimeException e) {
+                            Log.w(TAG, "Skipping project " + doc.getId() + " due to error: " + e.getMessage());
+                        }
+                    }
+
+                    // Sort by createdAt descending
+                    projects.sort((p1, p2) -> {
+                        if (p1.getCreatedAt() == null) return 1;
+                        if (p2.getCreatedAt() == null) return -1;
+                        return p2.getCreatedAt().compareTo(p1.getCreatedAt());
+                    });
+
+                    Log.d(TAG, "Realtime my projects update: " + projects.size());
+                    onDataChanged.onSuccess(projects);
+                }
+            });
+    }
+
     // MIGRATION: Fix memberIds field from HashMap to List<String>
     // Call this once to fix corrupted data in Firestore
     public void fixAllProjectsMemberIds(OnSuccessListener<String> onSuccess,
