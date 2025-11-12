@@ -315,39 +315,58 @@ public class ProjectListFragment extends Fragment {
         if (mAuth.getCurrentUser() == null) return;
 
         String currentUserId = mAuth.getCurrentUser().getUid();
+        String currentUserEmail = mAuth.getCurrentUser().getEmail();
 
-        // Get current user info first
-        com.fptu.prm392.mad.repositories.UserRepository userRepository = new com.fptu.prm392.mad.repositories.UserRepository();
-        userRepository.getUserById(currentUserId,
-            user -> {
-                // Create ProjectMember object with user info
-                com.fptu.prm392.mad.models.ProjectMember member = new com.fptu.prm392.mad.models.ProjectMember(
-                    project.getProjectId(),
-                    user.getUserId(),
-                    user.getFullname(),
-                    user.getEmail(),
-                    user.getAvatar(),
-                    "member" // Default role
-                );
+        // Check if already sent request
+        com.fptu.prm392.mad.repositories.ProjectJoinRequestRepository requestRepo =
+            new com.fptu.prm392.mad.repositories.ProjectJoinRequestRepository();
 
-                // Add current user to project members
-                projectRepository.addMemberToProject(
-                    project.getProjectId(),
-                    member,
-                    aVoid -> {
-                        Toast.makeText(getContext(), "Joined project: " + project.getName(),
-                            Toast.LENGTH_SHORT).show();
-                        dialog.dismiss();
-                        loadProjects(); // Refresh project list
+        requestRepo.hasPendingRequest(project.getProjectId(), currentUserId,
+            hasPending -> {
+                if (hasPending) {
+                    Toast.makeText(getContext(), "You already sent a join request for this project", Toast.LENGTH_LONG).show();
+                    return;
+                }
+
+                // Get current user info first
+                com.fptu.prm392.mad.repositories.UserRepository userRepository =
+                    new com.fptu.prm392.mad.repositories.UserRepository();
+                userRepository.getUserById(currentUserId,
+                    user -> {
+                        // Create Join Request
+                        com.fptu.prm392.mad.models.ProjectJoinRequest request =
+                            new com.fptu.prm392.mad.models.ProjectJoinRequest(
+                                null, // requestId will be generated
+                                project.getProjectId(),
+                                project.getName(),
+                                currentUserId,
+                                user.getFullname(),
+                                currentUserEmail,
+                                user.getAvatar(),
+                                project.getCreatedBy() // managerId
+                            );
+
+                        // Send request
+                        requestRepo.createJoinRequest(request,
+                            requestId -> {
+                                Toast.makeText(getContext(), "Join request sent! Waiting for manager approval.",
+                                    Toast.LENGTH_LONG).show();
+                                dialog.dismiss();
+                            },
+                            e -> {
+                                Toast.makeText(getContext(), "Error sending request: " + e.getMessage(),
+                                    Toast.LENGTH_SHORT).show();
+                            }
+                        );
                     },
                     e -> {
-                        Toast.makeText(getContext(), "Error joining project: " + e.getMessage(),
+                        Toast.makeText(getContext(), "Error loading user info: " + e.getMessage(),
                             Toast.LENGTH_SHORT).show();
                     }
                 );
             },
             e -> {
-                Toast.makeText(getContext(), "Error loading user info: " + e.getMessage(),
+                Toast.makeText(getContext(), "Error checking request: " + e.getMessage(),
                     Toast.LENGTH_SHORT).show();
             }
         );

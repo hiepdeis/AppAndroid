@@ -68,6 +68,13 @@
             android:layout_height="match_parent"
             android:visibility="gone" />
 
+        <!-- Notifications Fragment Container -->
+        <FrameLayout
+            android:id="@+id/notificationsFragmentContainer"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:visibility="gone" />
+
         <!-- Profile Container -->
         <ScrollView
             android:id="@+id/profileContainer"

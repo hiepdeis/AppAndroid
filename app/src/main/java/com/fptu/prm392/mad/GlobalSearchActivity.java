@@ -391,41 +391,56 @@ public class GlobalSearchActivity extends AppCompatActivity {
         String currentUserId = auth.getCurrentUser().getUid();
         String currentUserEmail = auth.getCurrentUser().getEmail();
 
-        // Get current user info
-        userRepository.getUserById(currentUserId,
-            user -> {
-                // Create ProjectMember
-                com.fptu.prm392.mad.models.ProjectMember newMember = new com.fptu.prm392.mad.models.ProjectMember(
-                    project.getProjectId(),
-                    currentUserId,
-                    user.getFullname(),
-                    currentUserEmail,
-                    user.getAvatar(),
-                    "member"
-                );
+        // Check if already sent request
+        com.fptu.prm392.mad.repositories.ProjectJoinRequestRepository requestRepo =
+            new com.fptu.prm392.mad.repositories.ProjectJoinRequestRepository();
 
-                // Add to project
-                projectRepository.addMemberToProject(project.getProjectId(), newMember,
-                    aVoid -> {
-                        hideLoading();
-                        Toast.makeText(this, "Joined project successfully!", Toast.LENGTH_SHORT).show();
-                        dialog.dismiss();
+        requestRepo.hasPendingRequest(project.getProjectId(), currentUserId,
+            hasPending -> {
+                if (hasPending) {
+                    hideLoading();
+                    Toast.makeText(this, "You already sent a join request for this project", Toast.LENGTH_LONG).show();
+                    return;
+                }
 
-                        // Open project detail
-                        Intent intent = new Intent(this, ProjectDetailActivity.class);
-                        intent.putExtra("PROJECT_ID", project.getProjectId());
-                        startActivity(intent);
-                        finish();
+                // Get current user info
+                userRepository.getUserById(currentUserId,
+                    user -> {
+                        // Create Join Request
+                        com.fptu.prm392.mad.models.ProjectJoinRequest request =
+                            new com.fptu.prm392.mad.models.ProjectJoinRequest(
+                                null, // requestId will be generated
+                                project.getProjectId(),
+                                project.getName(),
+                                currentUserId,
+                                user.getFullname(),
+                                currentUserEmail,
+                                user.getAvatar(),
+                                project.getCreatedBy() // managerId
+                            );
+
+                        // Send request
+                        requestRepo.createJoinRequest(request,
+                            requestId -> {
+                                hideLoading();
+                                Toast.makeText(this, "Join request sent! Waiting for manager approval.", Toast.LENGTH_LONG).show();
+                                dialog.dismiss();
+                            },
+                            e -> {
+                                hideLoading();
+                                Toast.makeText(this, "Error sending request: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+                            }
+                        );
                     },
                     e -> {
                         hideLoading();
-                        Toast.makeText(this, "Error joining project: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+                        Toast.makeText(this, "Error loading user info: " + e.getMessage(), Toast.LENGTH_SHORT).show();
                     }
                 );
             },
             e -> {
                 hideLoading();
-                Toast.makeText(this, "Error loading user info: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+                Toast.makeText(this, "Error checking request: " + e.getMessage(), Toast.LENGTH_SHORT).show();
             }
         );
     }

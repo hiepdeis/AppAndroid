@@ -42,7 +42,7 @@ public class HomeActivity extends AppCompatActivity {
 
     // Containers
     private FrameLayout contentArea;
-    private FrameLayout projectFragmentContainer, taskFragmentContainer, chatFragmentContainer, calendarFragmentContainer;
+    private FrameLayout projectFragmentContainer, taskFragmentContainer, chatFragmentContainer, calendarFragmentContainer, notificationsFragmentContainer;
     private LinearLayout otherTabsContainer;
     private ScrollView profileContainer;
 
@@ -52,6 +52,7 @@ public class HomeActivity extends AppCompatActivity {
     private CalendarFragment calendarFragment;
     private ChatListFragment chatListFragment;
     private ChatDetailFragment chatDetailFragment;
+    private com.fptu.prm392.mad.fragments.NotificationsFragment notificationsFragment;
 
     // Repositories
     private UserRepository userRepository;
@@ -88,6 +89,7 @@ public class HomeActivity extends AppCompatActivity {
         taskFragmentContainer = findViewById(R.id.taskFragmentContainer);
         calendarFragmentContainer = findViewById(R.id.calendarFragmentContainer);
         chatFragmentContainer = findViewById(R.id.chatFragmentContainer);
+        notificationsFragmentContainer = findViewById(R.id.notificationsFragmentContainer);
         otherTabsContainer = findViewById(R.id.otherTabsContainer);
         profileContainer = findViewById(R.id.profileContainer);
         tvTabMessage = findViewById(R.id.tvTabMessage);
@@ -151,7 +153,7 @@ public class HomeActivity extends AppCompatActivity {
                     showProjectsTab();
                     return true;
                 } else if (itemId == R.id.nav_task) {
-                    showTaskTab();
+                    showTasksTab();
                     return true;
                 } else if (itemId == R.id.nav_calendar) {
                     showCalendarTab();
@@ -160,7 +162,7 @@ public class HomeActivity extends AppCompatActivity {
                     showChatTab();
                     return true;
                 } else if (itemId == R.id.nav_notification) {
-                    showOtherTab("Notifications");
+                    showNotificationsTab();
                     return true;
                 } else if (itemId == R.id.nav_profile) {
                     showProfileTab();
@@ -233,6 +235,7 @@ public class HomeActivity extends AppCompatActivity {
         taskFragmentContainer.setVisibility(View.GONE);
         calendarFragmentContainer.setVisibility(View.GONE);
         chatFragmentContainer.setVisibility(View.GONE);
+        notificationsFragmentContainer.setVisibility(View.GONE);
         otherTabsContainer.setVisibility(View.GONE);
         profileContainer.setVisibility(View.GONE);
         contentArea.setBackgroundResource(R.drawable.img_3);
@@ -243,14 +246,15 @@ public class HomeActivity extends AppCompatActivity {
         transaction.commit();
     }
 
-    private void showTaskTab() {
+    private void showTasksTab() {
         projectFragmentContainer.setVisibility(View.GONE);
         taskFragmentContainer.setVisibility(View.VISIBLE);
         calendarFragmentContainer.setVisibility(View.GONE);
         chatFragmentContainer.setVisibility(View.GONE);
+        notificationsFragmentContainer.setVisibility(View.GONE);
         otherTabsContainer.setVisibility(View.GONE);
         profileContainer.setVisibility(View.GONE);
-        contentArea.setBackgroundResource(R.drawable.img_2);
+        contentArea.setBackgroundResource(R.drawable.img_3);
 
         // Load task list fragment
         FragmentTransaction transaction = getSupportFragmentManager().beginTransaction();
@@ -263,6 +267,7 @@ public class HomeActivity extends AppCompatActivity {
         taskFragmentContainer.setVisibility(View.GONE);
         calendarFragmentContainer.setVisibility(View.VISIBLE);
         chatFragmentContainer.setVisibility(View.GONE);
+        notificationsFragmentContainer.setVisibility(View.GONE);
         otherTabsContainer.setVisibility(View.GONE);
         profileContainer.setVisibility(View.GONE);
         contentArea.setBackgroundResource(R.drawable.img_3);
@@ -270,6 +275,27 @@ public class HomeActivity extends AppCompatActivity {
         // Load calendar fragment
         FragmentTransaction transaction = getSupportFragmentManager().beginTransaction();
         transaction.replace(R.id.calendarFragmentContainer, calendarFragment);
+        transaction.commit();
+    }
+
+    private void showNotificationsTab() {
+        projectFragmentContainer.setVisibility(View.GONE);
+        taskFragmentContainer.setVisibility(View.GONE);
+        calendarFragmentContainer.setVisibility(View.GONE);
+        chatFragmentContainer.setVisibility(View.GONE);
+        notificationsFragmentContainer.setVisibility(View.VISIBLE);
+        otherTabsContainer.setVisibility(View.GONE);
+        profileContainer.setVisibility(View.GONE);
+        contentArea.setBackgroundResource(R.drawable.profile_background);
+
+        // Initialize fragment if null
+        if (notificationsFragment == null) {
+            notificationsFragment = new com.fptu.prm392.mad.fragments.NotificationsFragment();
+        }
+
+        // Load notifications fragment
+        FragmentTransaction transaction = getSupportFragmentManager().beginTransaction();
+        transaction.replace(R.id.notificationsFragmentContainer, notificationsFragment);
         transaction.commit();
     }
 
@@ -289,6 +315,7 @@ public class HomeActivity extends AppCompatActivity {
         taskFragmentContainer.setVisibility(View.GONE);
         calendarFragmentContainer.setVisibility(View.GONE);
         chatFragmentContainer.setVisibility(View.GONE);
+        notificationsFragmentContainer.setVisibility(View.GONE);
         otherTabsContainer.setVisibility(View.GONE);
         profileContainer.setVisibility(View.VISIBLE);
         contentArea.setBackgroundResource(R.drawable.profile_background);
@@ -539,9 +566,10 @@ public class HomeActivity extends AppCompatActivity {
         taskFragmentContainer.setVisibility(View.GONE);
         calendarFragmentContainer.setVisibility(View.GONE);
         chatFragmentContainer.setVisibility(View.VISIBLE);
+        notificationsFragmentContainer.setVisibility(View.GONE);
         otherTabsContainer.setVisibility(View.GONE);
         profileContainer.setVisibility(View.GONE);
-        contentArea.setBackgroundResource(R.drawable.chat_background);
+        contentArea.setBackgroundResource(R.drawable.img_3);
 
         // Show chat list fragment
         showChatListFragment();
